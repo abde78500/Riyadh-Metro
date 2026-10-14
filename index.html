@@ -66,13 +66,13 @@ const T = {
   hint:'Click a station on the map or pick one from the list. Hover a zone for its figures.', allHint:'All stations at once: the darker the area, the more stations reach it within the chosen time.',
   wt:'Walking time shown', allT:'Nearest station (opaque)', allO:'Overlaid (transparent)', allHintO:'Walking zones of all stations, overlaid with transparency: the darker the area, the more zones cover it. Tick the walking times to show.', allHintT:'All stations and all walking times at once. Each colour shows the walking time to the nearest station: the darker, the farther.', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
   note:'Walking at 4.8 km/h on the OpenStreetMap pedestrian network; where OpenStreetMap is incomplete, areas are underestimated. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means the street network forces detours).',
-  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', follow:'Follow the mouse', followHint:'Move the mouse over the map: the panel shows the walking time to the nearest station.', fh1:'Here: within', fh2:'min walk of', far:'More than 30 min on foot from any station.', also:'Also within reach of:', toggle:'Français',
+  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', follow:'Follow the mouse', followHint:'Move the mouse over the map: the panel shows the walking time to the nearest station.', near:'Nearest station (straight line):', fh1:'Here: within', fh2:'min walk of', far:'More than 30 min on foot from any station.', also:'Also within reach of:', toggle:'Français',
   lines:{Blue:'Blue Line',Red:'Red Line',Orange:'Orange Line',Yellow:'Yellow Line',Green:'Green Line',Purple:'Purple Line'}},
  fr:{title:'À portée de métro', sub:"Riyadh : jusqu'où aller à pied depuis chaque station.", choose:'Choisir une station', all:'Toutes les stations (superposées)',
   hint:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.', allHint:'Toutes les stations à la fois : plus la zone est foncée, plus de stations la desservent dans le temps choisi.',
   wt:'Temps de marche affiché', allT:'Station la plus proche (opaque)', allO:'Superposé (transparent)', allHintO:'Zones de marche de toutes les stations, superposées en transparence : plus la zone est foncée, plus elle est couverte par de zones. Coche les temps de marche à afficher.', allHintT:"Toutes les stations et tous les temps de marche à la fois. Chaque couleur indique le temps de marche jusqu'à la station la plus proche : plus c'est foncé, plus c'est loin.", leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
   note:"Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap ; là où OpenStreetMap est incomplet, les zones sont sous-estimées. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours imposés par les rues).",
-  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', follow:'Suivre la souris', followHint:'Déplace la souris sur la carte : le panneau indique le temps de marche jusqu\'à la station la plus proche.', fh1:'Ici : à moins de', fh2:'min à pied de', far:'À plus de 30 min à pied de toute station.', also:'Aussi à portée de :', toggle:'English',
+  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', follow:'Suivre la souris', followHint:'Déplace la souris sur la carte : le panneau indique le temps de marche jusqu\'à la station la plus proche.', near:"Station la plus proche (à vol d'oiseau) :", fh1:'Ici : à moins de', fh2:'min à pied de', far:'À plus de 30 min à pied de toute station.', also:'Aussi à portée de :', toggle:'English',
   lines:{Blue:'Ligne bleue',Red:'Ligne rouge',Orange:'Ligne orange',Yellow:'Ligne jaune',Green:'Ligne verte',Purple:'Ligne violette'}}
 };
 let lang = 'en', mode = '', cur = null, styleMode = 'near'; const on = new Set([5, 10, 15, 20, 25, 30]);
@@ -204,16 +204,19 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
 
   function reset() { clearIso(); mode = ''; cur = null; $('wtrow').hidden = true; showInfo(); showLegend(); }
 
-  let hl = null, raf = 0, follow = false;
+  let hl = null, ln = null, raf = 0, follow = false;
   function locate(x, y) { const res = {}; iso.features.forEach(f => { const b = f._b; if (x < b[0] || x > b[2] || y < b[1] || y > b[3] || !inGeom(x, y, f.geometry)) return; const n = f.properties.station, m = f.properties.minutes; if (!(n in res) || m < res[n]) res[n] = m; }); return res; }
   function live(ll) {
     const res = locate(ll.lng, ll.lat), list = Object.keys(res).map(n => [n, res[n], map.distance(ll, markers[n].getLatLng())]).sort((a, b) => a[1] - b[1] || a[2] - b[2]);
     if (hl && hl !== cur) markers[hl].setStyle(base); hl = null;
     const el = $('info'); el.innerHTML = '';
     const add = (t, b) => { const d = document.createElement('div'); if (b) d.style.fontWeight = 600; d.textContent = t; el.appendChild(d); };
-    if (!list.length) { add(tr('far')); return; }
-    hl = list[0][0]; if (hl !== cur) markers[hl].setStyle({radius:8, fillColor:'#ffd400'});
-    add(tr('fh1') + ' ' + list[0][1] + ' ' + tr('fh2') + ' ' + list[0][0], true);
+    let nn = null, nd = 1e12; Object.keys(markers).forEach(n => { const d = map.distance(ll, markers[n].getLatLng()); if (d < nd) { nd = d; nn = n; } });
+    if (ln) map.removeLayer(ln);
+    ln = L.polyline([ll, markers[nn].getLatLng()], {color:'#16222b', weight:2, dashArray:'4 6', opacity:.8, interactive:false, pane:'lines'}).addTo(map);
+    hl = list.length ? list[0][0] : nn; if (hl !== cur) markers[hl].setStyle({radius:8, fillColor:'#ffd400'});
+    if (list.length) add(tr('fh1') + ' ' + list[0][1] + ' ' + tr('fh2') + ' ' + list[0][0], true); else add(tr('far'), true);
+    add(tr('near') + ' ' + nn + ', ' + (nd < 1000 ? Math.round(nd) + ' m' : (nd / 1000).toFixed(1) + ' km'));
     if (list.length > 1) add(tr('also') + ' ' + list.slice(1, 5).map(x => x[0] + ' (' + x[1] + ')').join(', ') + (list.length > 5 ? '…' : ''));
   }
 
@@ -231,7 +234,7 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
   $('sty').addEventListener('change', () => { styleMode = $('sty').value; if (mode === 'all') showAll(false); });
   $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
   $('follow').addEventListener('click', () => { follow = !follow; $('follow').setAttribute('aria-pressed', follow);
-    if (follow) $('info').textContent = tr('followHint'); else { if (hl && hl !== cur) markers[hl].setStyle(base); hl = null; showInfo(); } });
+    if (follow) $('info').textContent = tr('followHint'); else { if (hl && hl !== cur) markers[hl].setStyle(base); hl = null; if (ln) { map.removeLayer(ln); ln = null; } showInfo(); } });
   map.on('mousemove', e => { if (!follow || raf) return; raf = requestAnimationFrame(() => { raf = 0; live(e.latlng); }); });
   map.on('click', e => { if (follow) live(e.latlng); });
   applyLang();
