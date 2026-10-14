@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>À portée de métro – Riyadh</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Sans+Arabic:wght@400&display=swap">
+<style>
+:root{--ink:#16222b;--muted:#5d6b75;--paper:#fbfaf7;--rule:#d9d5cc}
+html,body{height:100%;margin:0}
+body{font-family:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;color:var(--ink)}
+#map{height:100%;background:#e8e6e0}
+#panel{position:absolute;z-index:1000;top:12px;left:12px;width:285px;max-width:calc(100% - 24px);box-sizing:border-box;
+  background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;font-size:14px;line-height:1.45;
+  box-shadow:0 4px 18px rgba(22,34,43,.18);max-height:calc(100% - 24px);overflow:auto}
+h1{font-size:19px;line-height:1.2;margin:0 0 4px;font-weight:600}
+.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink)}
+select:focus-visible{outline:2px solid #1f6a7d;outline-offset:1px}
+#info{margin:12px 0;min-height:44px}
+#info b{font-weight:600}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend{border-top:1px solid var(--rule);padding-top:10px}
+.legend p{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px}
+.sw{width:26px;height:12px;border-radius:2px;border:1px solid rgba(22,34,43,.25)}
+.note{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.error{color:#9b1c1c}
+.leaflet-tooltip{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="panel">
+  <h1>À portée de métro</h1>
+  <p class="sub">Riyadh : jusqu'où aller à pied depuis chaque station.</p>
+  <select id="sel" aria-label="Choisir une station"><option value="">Choisir une station</option></select>
+  <div id="info">Clique sur une station de la carte ou choisis-la dans la liste.</div>
+  <div class="legend" id="legend"><p>Temps de marche</p></div>
+  <p class="note">Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap. Là où le réseau y est incomplet, les zones sont sous-estimées.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const LINE_COLORS = {Blue:'#1d6fc4', Red:'#e03a3a', Orange:'#f28c28', Yellow:'#f5c400', Green:'#2e9e4f', Purple:'#8a4fb8'};
+const MIN_COLORS = {5:'#0f3d4c', 10:'#1f6a7d', 15:'#4f97a6', 20:'#86bcc6', 25:'#bcdadf', 30:'#e3f0f2'};
+
+const map = L.map('map', {zoomControl:false}).setView([24.71, 46.69], 11);
+L.control.zoom({position:'topright'}).addTo(map);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  {maxZoom:19, attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(map);
+[['iso',350],['lines',450],['stations',650]].forEach(([n,z]) => { map.createPane(n).style.zIndex = z; });
+
+const legend = document.getElementById('legend');
+Object.keys(MIN_COLORS).forEach(m => {
+  const r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = '<span class="sw" style="background:' + MIN_COLORS[m] + '"></span>' + m + ' min';
+  legend.appendChild(r);
+});
+
+const info = document.getElementById('info'), sel = document.getElementById('sel');
+const load = u => fetch(u).then(r => { if (!r.ok) throw new Error(u); return r.json(); });
+
+Promise.all([load('isochrones_pied.geojson'), load('lignes.geojson'), load('stations.geojson')])
+.then(([iso, lines, sts]) => {
+  const byStation = {};
+  iso.features.forEach(f => (byStation[f.properties.station] = byStation[f.properties.station] || []).push(f));
+
+  L.geoJSON(lines, {pane:'lines', style: f => ({
+    color: LINE_COLORS[String(f.properties.lines || '').split('|')[0].trim()] || '#666', weight:4, opacity:.95})}).addTo(map);
+
+  const markers = {}, props = {};
+  let isoLayer = null, current = null;
+  const base = {radius:6, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
+
+  L.geoJSON(sts, {
+    pointToLayer: (f, ll) => L.circleMarker(ll, Object.assign({pane:'stations'}, base)),
+    onEachFeature: (f, l) => {
+      const n = f.properties.Name_ENG;
+      markers[n] = l; props[n] = f.properties;
+      l.bindTooltip(n);
+      l.on('click', () => select(n));
+    }
+  }).addTo(map);
+
+  Object.keys(markers).sort().forEach(n => {
+    const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+  });
+  sel.addEventListener('change', () => sel.value && select(sel.value));
+
+  function select(name) {
+    if (isoLayer) map.removeLayer(isoLayer);
+    if (current) markers[current].setStyle(base);
+    current = name; sel.value = name;
+    markers[name].setStyle({radius:9, fillColor:'#ffd400'});
+    const feats = (byStation[name] || []).slice().sort((a, b) => b.properties.minutes - a.properties.minutes);
+    isoLayer = L.geoJSON(feats, {pane:'iso', style: f => ({
+      color: MIN_COLORS[f.properties.minutes], weight:1, fillColor: MIN_COLORS[f.properties.minutes], fillOpacity:.6})}).addTo(map);
+    if (feats.length) map.fitBounds(isoLayer.getBounds(), {padding:[40, 40], maxZoom:14});
+
+    const p = props[name], ls = String(p.lines || '').split('|').map(s => s.trim()).filter(Boolean);
+    const ex = p.Echange && !/^(no|non|0|false)$/i.test(String(p.Echange));
+    info.innerHTML = '';
+    const b = document.createElement('b'); b.textContent = name; info.appendChild(b);
+    const d = document.createElement('div');
+    ls.forEach(l => { const s = document.createElement('span'); s.style.marginRight = '10px';
+      s.innerHTML = '<span class="dot" style="background:' + (LINE_COLORS[l] || '#666') + '"></span>'; s.append(l); d.appendChild(s); });
+    info.appendChild(d);
+    if (ex) { const e = document.createElement('div'); e.textContent = 'Station de correspondance'; info.appendChild(e); }
+    if (!feats.length) { const e = document.createElement('div'); e.textContent = 'Aucune zone calculée pour cette station.'; info.appendChild(e); }
+  }
+})
+.catch(e => {
+  info.className = 'error';
+  info.textContent = 'Impossible de charger ' + e.message + '. Vérifie que les trois fichiers .geojson sont dans le même dossier que cette page et ouvre-la depuis un serveur (GitHub Pages ou python -m http.server).';
+});
+</script>
+</body>
+</html>
