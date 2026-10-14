@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>À portée de métro – Riyadh</title>
+<title>Within metro reach – Riyadh</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,20 +13,25 @@
 html,body{height:100%;margin:0}
 body{font-family:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;color:var(--ink)}
 #map{height:100%;background:#e8e6e0}
-#panel{position:absolute;z-index:1000;top:12px;left:12px;width:285px;max-width:calc(100% - 24px);box-sizing:border-box;
-  background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;font-size:14px;line-height:1.45;
-  box-shadow:0 4px 18px rgba(22,34,43,.18);max-height:calc(100% - 24px);overflow:auto}
+#panel{position:absolute;z-index:1000;top:12px;left:12px;width:300px;max-width:calc(100% - 24px);box-sizing:border-box;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;font-size:14px;line-height:1.45;box-shadow:0 4px 18px rgba(22,34,43,.18);max-height:calc(100% - 24px);overflow:auto}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 h1{font-size:19px;line-height:1.2;margin:0 0 4px;font-weight:600}
+#lang{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);cursor:pointer}
 .sub{margin:0 0 12px;color:var(--muted);font-size:13px}
 select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink)}
-select:focus-visible{outline:2px solid #1f6a7d;outline-offset:1px}
+select:focus-visible,#lang:focus-visible{outline:2px solid #1f6a7d;outline-offset:1px}
+#wtrow{margin-top:8px;font-size:13px;color:var(--muted)}
+#wtrow select{margin-top:3px}
 #info{margin:12px 0;min-height:44px}
-#info b{font-weight:600}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
 .legend{border-top:1px solid var(--rule);padding-top:10px}
 .legend p{margin:0 0 6px;font-size:13px;color:var(--muted)}
-.row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px}
-.sw{width:26px;height:12px;border-radius:2px;border:1px solid rgba(22,34,43,.25)}
+.row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}
+.sw{width:22px;height:12px;border-radius:2px;border:1px solid rgba(22,34,43,.25);flex:none}
+.lab{width:52px;flex:none}
+.bar{flex:1;height:6px;background:#e7e4dc;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:#1f6a7d}
+.val{width:62px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
 .note{margin:10px 0 0;font-size:12px;color:var(--muted)}
 .error{color:#9b1c1c}
 .leaflet-tooltip{font-family:inherit}
@@ -35,18 +40,37 @@ select:focus-visible{outline:2px solid #1f6a7d;outline-offset:1px}
 <body>
 <div id="map"></div>
 <div id="panel">
-  <h1>À portée de métro</h1>
-  <p class="sub">Riyadh : jusqu'où aller à pied depuis chaque station.</p>
-  <select id="sel" aria-label="Choisir une station"><option value="">Choisir une station</option></select>
-  <div id="info">Clique sur une station de la carte ou choisis-la dans la liste.</div>
-  <div class="legend" id="legend"><p>Temps de marche</p></div>
-  <p class="note">Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap. Là où le réseau y est incomplet, les zones sont sous-estimées.</p>
+  <div class="top"><h1 id="t_title"></h1><button id="lang" type="button"></button></div>
+  <p class="sub" id="t_sub"></p>
+  <select id="sel"></select>
+  <div id="wtrow" hidden><label for="wt" id="t_wt"></label><select id="wt"></select></div>
+  <div id="info"></div>
+  <div class="legend" id="legend"></div>
+  <p class="note" id="t_note"></p>
 </div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+const LINE_ORDER = ['Blue','Red','Orange','Yellow','Green','Purple'];
 const LINE_COLORS = {Blue:'#1d6fc4', Red:'#e03a3a', Orange:'#f28c28', Yellow:'#f5c400', Green:'#2e9e4f', Purple:'#8a4fb8'};
-const MIN_COLORS = {5:'#0f3d4c', 10:'#1f6a7d', 15:'#4f97a6', 20:'#86bcc6', 25:'#bcdadf', 30:'#e3f0f2'};
+const MIN_COLORS = {5:'#cfe8ec', 10:'#9ccbd4', 15:'#69aebb', 20:'#3f8c9b', 25:'#236b7c', 30:'#0f3d4c'};
+const KMH = 4.8;
+const T = {
+ en:{title:'Within metro reach', sub:'Riyadh: how far you can walk from each station.', choose:'Choose a station', all:'All stations (overlaid)',
+  hint:'Click a station on the map or pick one from the list. Hover a zone for its figures.', allHint:'All stations at once: the darker the area, the more stations reach it within the chosen time.',
+  wt:'Walking time shown', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
+  note:'Walking at 4.8 km/h on the OpenStreetMap pedestrian network; where OpenStreetMap is incomplete, areas are underestimated. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means the street network forces detours).',
+  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', toggle:'Français',
+  lines:{Blue:'Blue Line',Red:'Red Line',Orange:'Orange Line',Yellow:'Yellow Line',Green:'Green Line',Purple:'Purple Line'}},
+ fr:{title:'À portée de métro', sub:"Riyadh : jusqu'où aller à pied depuis chaque station.", choose:'Choisir une station', all:'Toutes les stations (superposées)',
+  hint:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.', allHint:'Toutes les stations à la fois : plus la zone est foncée, plus de stations la desservent dans le temps choisi.',
+  wt:'Temps de marche affiché', leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
+  note:"Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap ; là où OpenStreetMap est incomplet, les zones sont sous-estimées. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours imposés par les rues).",
+  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', toggle:'English',
+  lines:{Blue:'Ligne bleue',Red:'Ligne rouge',Orange:'Ligne orange',Yellow:'Ligne jaune',Green:'Ligne verte',Purple:'Ligne violette'}}
+};
+let lang = 'en', mode = '', cur = null, wtVal = 15;
+const tr = k => T[lang][k];
+const $ = id => document.getElementById(id);
 
 const map = L.map('map', {zoomControl:false}).setView([24.71, 46.69], 11);
 L.control.zoom({position:'topright'}).addTo(map);
@@ -56,69 +80,132 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_L
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:16, pane:'labels'}).addTo(map);
 
-const legend = document.getElementById('legend');
+const legend = $('legend'); legend.innerHTML = '<p id="t_leg"></p>';
 Object.keys(MIN_COLORS).forEach(m => {
-  const r = document.createElement('div'); r.className = 'row';
-  r.innerHTML = '<span class="sw" style="background:' + MIN_COLORS[m] + '"></span>' + m + ' min';
+  const r = document.createElement('div'); r.className = 'row'; r.dataset.m = m;
+  r.innerHTML = '<span class="sw" style="background:' + MIN_COLORS[m] + '"></span><span class="lab">' + m + ' <span class="u"></span></span><span class="bar"><i></i></span><span class="val"></span>';
   legend.appendChild(r);
 });
+Object.keys(MIN_COLORS).forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m + ' min'; $('wt').appendChild(o); });
+$('wt').value = wtVal;
 
-const info = document.getElementById('info'), sel = document.getElementById('sel');
-const load = u => fetch(u).then(r => { if (!r.ok) throw new Error(u); return r.json(); });
+function area(g) { // km², from lon/lat
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates; let a = 0;
+  polys.forEach(p => p.forEach((ring, i) => {
+    const kx = 111.32 * Math.cos(ring[0][1] * Math.PI / 180), ky = 110.57; let s = 0;
+    for (let j = 0; j < ring.length - 1; j++) s += ring[j][0] * kx * ring[j+1][1] * ky - ring[j+1][0] * kx * ring[j][1] * ky;
+    a += (i === 0 ? 1 : -1) * Math.abs(s / 2);
+  }));
+  return a;
+}
+const pctOf = (a, m) => 100 * a / (Math.PI * Math.pow(KMH * m / 60, 2));
+const lineList = p => String(p.lines || '').split('|').map(s => s.trim()).filter(Boolean);
 
-Promise.all([load('isochrones_pied.geojson'), load('lignes.geojson'), load('stations.geojson')])
+Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('stations.geojson')].map(p => p.then(r => { if (!r.ok) throw new Error(r.url); return r.json(); })))
 .then(([iso, lines, sts]) => {
   const byStation = {};
-  iso.features.forEach(f => (byStation[f.properties.station] = byStation[f.properties.station] || []).push(f));
+  iso.features.forEach(f => { f.properties._a = area(f.geometry); (byStation[f.properties.station] = byStation[f.properties.station] || []).push(f); });
 
-  L.geoJSON(lines, {pane:'lines', style: f => ({
-    color: LINE_COLORS[String(f.properties.lines || '').split('|')[0].trim()] || '#666', weight:4, opacity:.95})}).addTo(map);
+  L.geoJSON(lines, {pane:'lines', style: f => ({color: LINE_COLORS[lineList(f.properties)[0]] || '#666', weight:4, opacity:.95})}).addTo(map);
 
-  const markers = {}, props = {};
-  let isoLayer = null, current = null;
-  const base = {radius:6, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
-
+  const markers = {}, props = {}, base = {radius:6, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
   L.geoJSON(sts, {
     pointToLayer: (f, ll) => L.circleMarker(ll, Object.assign({pane:'stations'}, base)),
     onEachFeature: (f, l) => {
-      const n = f.properties.Name_ENG;
-      markers[n] = l; props[n] = f.properties;
-      l.bindTooltip(n);
+      const n = f.properties.Name_ENG; markers[n] = l; props[n] = f.properties;
+      l.bindTooltip(() => n + ' · ' + lineList(props[n]).map(c => T[lang].lines[c] || c).join(', '));
       l.on('click', () => select(n));
     }
   }).addTo(map);
 
-  Object.keys(markers).sort().forEach(n => {
-    const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
-  });
-  sel.addEventListener('change', () => sel.value && select(sel.value));
+  let isoLayer = null;
+  const clearIso = () => { if (isoLayer) map.removeLayer(isoLayer); isoLayer = null; if (cur && markers[cur]) markers[cur].setStyle(base); };
+
+  function buildSelect() {
+    const keep = mode === 'all' ? '__all' : (cur || ''); $('sel').innerHTML = '';
+    const add = (p, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; p.appendChild(o); return o; };
+    add($('sel'), '', tr('choose')); add($('sel'), '__all', tr('all'));
+    const names = Object.keys(props).sort(), used = new Set();
+    LINE_ORDER.forEach(c => {
+      const inLine = names.filter(n => lineList(props[n]).includes(c)); if (!inLine.length) return;
+      const g = document.createElement('optgroup'); g.label = '● ' + T[lang].lines[c]; g.style.color = LINE_COLORS[c];
+      inLine.forEach(n => { used.add(n); add(g, n, n).style.color = '#16222b'; }); $('sel').appendChild(g);
+    });
+    const rest = names.filter(n => !used.has(n));
+    if (rest.length) { const g = document.createElement('optgroup'); g.label = tr('other'); rest.forEach(n => add(g, n, n)); $('sel').appendChild(g); }
+    $('sel').value = keep;
+  }
+
+  function showInfo() {
+    const el = $('info'); el.innerHTML = '';
+    const add = (t, b) => { const d = document.createElement('div'); if (b) d.style.fontWeight = 600; d.textContent = t; el.appendChild(d); return d; };
+    if (mode === 'all') { add(tr('allHint')); return; }
+    if (mode !== 'one') { add(tr('hint')); return; }
+    add(cur, true);
+    const d = document.createElement('div');
+    lineList(props[cur]).forEach(c => { const s = document.createElement('span'); s.style.marginRight = '10px';
+      s.innerHTML = '<span class="dot" style="background:' + (LINE_COLORS[c] || '#666') + '"></span>'; s.append(T[lang].lines[c] || c); d.appendChild(s); });
+    el.appendChild(d);
+    const ex = props[cur].Echange && !/^(no|non|0|false)$/i.test(String(props[cur].Echange));
+    if (ex) add(tr('ex'));
+    if (!(byStation[cur] || []).length) add(tr('none'));
+  }
+
+  function showLegend() {
+    legend.querySelectorAll('.row').forEach(r => {
+      const m = r.dataset.m, f = mode === 'one' && (byStation[cur] || []).find(x => String(x.properties.minutes) === m);
+      r.querySelector('.u').textContent = tr('min');
+      r.querySelector('.val').textContent = f ? f.properties._a.toFixed(1) + ' km²' : '';
+      r.querySelector('.bar i').style.width = f ? Math.min(100, pctOf(f.properties._a, +m)).toFixed(0) + '%' : '0';
+      r.title = f ? pctOf(f.properties._a, +m).toFixed(0) + '% ' + tr('disc') : '';
+    });
+  }
+
+  const tip = (f, l) => l.bindTooltip(() => f.properties.station + ' · ' + f.properties.minutes + ' ' + tr('min') + ' ' + tr('walk') + '\n' +
+    f.properties._a.toFixed(1) + ' km² · ' + pctOf(f.properties._a, f.properties.minutes).toFixed(0) + '% ' + tr('disc'), {sticky:true});
 
   function select(name) {
-    if (isoLayer) map.removeLayer(isoLayer);
-    if (current) markers[current].setStyle(base);
-    current = name; sel.value = name;
+    clearIso(); mode = 'one'; cur = name; $('sel').value = name; $('wtrow').hidden = true;
     markers[name].setStyle({radius:9, fillColor:'#ffd400'});
     const feats = (byStation[name] || []).slice().sort((a, b) => b.properties.minutes - a.properties.minutes);
-    isoLayer = L.geoJSON(feats, {pane:'iso', style: f => ({
-      color: MIN_COLORS[f.properties.minutes], weight:1, fillColor: MIN_COLORS[f.properties.minutes], fillOpacity:.6})}).addTo(map);
+    isoLayer = L.geoJSON(feats, {pane:'iso',
+      style: f => ({color: MIN_COLORS[f.properties.minutes], weight:1, opacity:.9, fillColor: MIN_COLORS[f.properties.minutes], fillOpacity:.55}),
+      onEachFeature: (f, l) => { tip(f, l); l.on('mouseover', () => l.setStyle({weight:3, color:'#16222b'})); l.on('mouseout', () => isoLayer.resetStyle(l)); }}).addTo(map);
     if (feats.length) map.fitBounds(isoLayer.getBounds(), {padding:[40, 40], maxZoom:14});
-
-    const p = props[name], ls = String(p.lines || '').split('|').map(s => s.trim()).filter(Boolean);
-    const ex = p.Echange && !/^(no|non|0|false)$/i.test(String(p.Echange));
-    info.innerHTML = '';
-    const b = document.createElement('b'); b.textContent = name; info.appendChild(b);
-    const d = document.createElement('div');
-    ls.forEach(l => { const s = document.createElement('span'); s.style.marginRight = '10px';
-      s.innerHTML = '<span class="dot" style="background:' + (LINE_COLORS[l] || '#666') + '"></span>'; s.append(l); d.appendChild(s); });
-    info.appendChild(d);
-    if (ex) { const e = document.createElement('div'); e.textContent = 'Station de correspondance'; info.appendChild(e); }
-    if (!feats.length) { const e = document.createElement('div'); e.textContent = 'Aucune zone calculée pour cette station.'; info.appendChild(e); }
+    showInfo(); showLegend();
   }
+
+  function showAll() {
+    clearIso(); mode = 'all'; cur = null; $('wtrow').hidden = false;
+    const feats = iso.features.filter(f => String(f.properties.minutes) === String(wtVal)), c = MIN_COLORS[wtVal];
+    isoLayer = L.geoJSON(feats, {pane:'iso', style: () => ({color:c, weight:.5, opacity:.6, fillColor:c, fillOpacity:.2}),
+      onEachFeature: (f, l) => { tip(f, l); l.on('mouseover', () => l.setStyle({weight:2.5, color:'#16222b', fillOpacity:.45})); l.on('mouseout', () => isoLayer.resetStyle(l));
+        l.on('click', () => select(f.properties.station)); }}).addTo(map);
+    map.fitBounds(isoLayer.getBounds(), {padding:[40, 40]});
+    showInfo(); showLegend();
+  }
+
+  function reset() { clearIso(); mode = ''; cur = null; $('wtrow').hidden = true; showInfo(); showLegend(); }
+
+  function applyLang() {
+    document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
+    $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note');
+    $('t_wt').textContent = tr('wt'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
+    [...$('wt').options].forEach(o => { o.textContent = o.value + ' ' + tr('min'); });
+    buildSelect(); showInfo(); showLegend();
+  }
+
+  $('sel').addEventListener('change', () => { const v = $('sel').value; v === '__all' ? showAll() : v ? select(v) : reset(); });
+  $('wt').addEventListener('change', () => { wtVal = +$('wt').value; showAll(); });
+  $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
+  applyLang();
 })
 .catch(e => {
-  info.className = 'error';
-  info.textContent = 'Impossible de charger ' + e.message + '. Vérifie que les trois fichiers .geojson sont dans le même dossier que cette page et ouvre-la depuis un serveur (GitHub Pages ou python -m http.server).';
+  $('info').className = 'error';
+  $('info').textContent = tr('err') + (e.message || '') + tr('err2');
 });
+$('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note'); $('lang').textContent = tr('toggle'); $('t_leg').textContent = tr('leg');
+$('sel').innerHTML = '<option>' + tr('choose') + '</option>'; $('info').textContent = tr('hint');
 </script>
 </body>
 </html>
