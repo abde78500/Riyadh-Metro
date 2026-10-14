@@ -57,13 +57,13 @@ const KMH = 4.8;
 const T = {
  en:{title:'Within metro reach', sub:'Riyadh: how far you can walk from each station.', choose:'Choose a station', all:'All stations (overlaid)',
   hint:'Click a station on the map or pick one from the list. Hover a zone for its figures.', allHint:'All stations at once: the darker the area, the more stations reach it within the chosen time.',
-  wt:'Walking time shown', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
+  wt:'Walking time shown', allT:'All times', allHintT:'All stations and all walking times at once. Each colour shows the walking time to the nearest station: the darker, the farther.', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
   note:'Walking at 4.8 km/h on the OpenStreetMap pedestrian network; where OpenStreetMap is incomplete, areas are underestimated. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means the street network forces detours).',
   walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', toggle:'Français',
   lines:{Blue:'Blue Line',Red:'Red Line',Orange:'Orange Line',Yellow:'Yellow Line',Green:'Green Line',Purple:'Purple Line'}},
  fr:{title:'À portée de métro', sub:"Riyadh : jusqu'où aller à pied depuis chaque station.", choose:'Choisir une station', all:'Toutes les stations (superposées)',
   hint:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.', allHint:'Toutes les stations à la fois : plus la zone est foncée, plus de stations la desservent dans le temps choisi.',
-  wt:'Temps de marche affiché', leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
+  wt:'Temps de marche affiché', allT:'Tous les temps', allHintT:"Toutes les stations et tous les temps de marche à la fois. Chaque couleur indique le temps de marche jusqu'à la station la plus proche : plus c'est foncé, plus c'est loin.", leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
   note:"Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap ; là où OpenStreetMap est incomplet, les zones sont sous-estimées. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours imposés par les rues).",
   walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', toggle:'English',
   lines:{Blue:'Ligne bleue',Red:'Ligne rouge',Orange:'Ligne orange',Yellow:'Ligne jaune',Green:'Ligne verte',Purple:'Ligne violette'}}
@@ -86,6 +86,7 @@ Object.keys(MIN_COLORS).forEach(m => {
   r.innerHTML = '<span class="sw" style="background:' + MIN_COLORS[m] + '"></span><span class="lab">' + m + ' <span class="u"></span></span><span class="bar"><i></i></span><span class="val"></span>';
   legend.appendChild(r);
 });
+{ const o = document.createElement('option'); o.value = 'all'; o.textContent = 'All times'; $('wt').appendChild(o); }
 Object.keys(MIN_COLORS).forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m + ' min'; $('wt').appendChild(o); });
 $('wt').value = wtVal;
 
@@ -139,7 +140,7 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
   function showInfo() {
     const el = $('info'); el.innerHTML = '';
     const add = (t, b) => { const d = document.createElement('div'); if (b) d.style.fontWeight = 600; d.textContent = t; el.appendChild(d); return d; };
-    if (mode === 'all') { add(tr('allHint')); return; }
+    if (mode === 'all') { add(wtVal === 'all' ? tr('allHintT') : tr('allHint')); return; }
     if (mode !== 'one') { add(tr('hint')); return; }
     add(cur, true);
     const d = document.createElement('div');
@@ -177,9 +178,9 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
 
   function showAll() {
     clearIso(); mode = 'all'; cur = null; $('wtrow').hidden = false;
-    const feats = iso.features.filter(f => String(f.properties.minutes) === String(wtVal)), c = MIN_COLORS[wtVal];
-    isoLayer = L.geoJSON(feats, {pane:'iso', style: () => ({color:c, weight:.5, opacity:.6, fillColor:c, fillOpacity:.2}),
-      onEachFeature: (f, l) => { tip(f, l); l.on('mouseover', () => l.setStyle({weight:2.5, color:'#16222b', fillOpacity:.45})); l.on('mouseout', () => isoLayer.resetStyle(l));
+    const every = wtVal === 'all', feats = every ? iso.features.slice().sort((a, b) => b.properties.minutes - a.properties.minutes) : iso.features.filter(f => String(f.properties.minutes) === String(wtVal));
+    isoLayer = L.geoJSON(feats, {pane:'iso', style: f => { const c = MIN_COLORS[f.properties.minutes]; return every ? {color:c, weight:0, fillColor:c, fillOpacity:.7} : {color:c, weight:.5, opacity:.6, fillColor:c, fillOpacity:.2}; },
+      onEachFeature: (f, l) => { tip(f, l); l.on('mouseover', () => l.setStyle({weight:2.5, color:'#16222b', fillOpacity: every ? .7 : .45})); l.on('mouseout', () => isoLayer.resetStyle(l));
         l.on('click', () => select(f.properties.station)); }}).addTo(map);
     map.fitBounds(isoLayer.getBounds(), {padding:[40, 40]});
     showInfo(); showLegend();
@@ -191,12 +192,12 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
     document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
     $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note');
     $('t_wt').textContent = tr('wt'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
-    [...$('wt').options].forEach(o => { o.textContent = o.value + ' ' + tr('min'); });
+    [...$('wt').options].forEach(o => { o.textContent = o.value === 'all' ? tr('allT') : o.value + ' ' + tr('min'); });
     buildSelect(); showInfo(); showLegend();
   }
 
   $('sel').addEventListener('change', () => { const v = $('sel').value; v === '__all' ? showAll() : v ? select(v) : reset(); });
-  $('wt').addEventListener('change', () => { wtVal = +$('wt').value; showAll(); });
+  $('wt').addEventListener('change', () => { wtVal = $('wt').value === 'all' ? 'all' : +$('wt').value; showAll(); });
   $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
   applyLang();
 })
