@@ -36,6 +36,9 @@ select:focus-visible,#lang:focus-visible{outline:2px solid #1f6a7d;outline-offse
 #chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
 #chips label{display:flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);cursor:pointer}
 #chips input{margin:0}
+#follow{width:100%;margin-top:8px;font:inherit;padding:7px 8px;border:1px solid #1f6a7d;border-radius:4px;background:#fff;color:#1f6a7d;cursor:pointer}
+#follow[aria-pressed="true"]{background:#1f6a7d;color:#fff}
+#follow:focus-visible{outline:2px solid #1f6a7d;outline-offset:1px}
 .error{color:#9b1c1c}
 .leaflet-tooltip{font-family:inherit}
 </style>
@@ -46,6 +49,7 @@ select:focus-visible,#lang:focus-visible{outline:2px solid #1f6a7d;outline-offse
   <div class="top"><h1 id="t_title"></h1><button id="lang" type="button"></button></div>
   <p class="sub" id="t_sub"></p>
   <select id="sel"></select>
+  <button id="follow" type="button" aria-pressed="false"></button>
   <div id="wtrow" hidden><div id="t_wt"></div><div id="chips"></div><select id="sty" aria-label="Display"></select></div>
   <div id="info"></div>
   <div class="legend" id="legend"></div>
@@ -62,13 +66,13 @@ const T = {
   hint:'Click a station on the map or pick one from the list. Hover a zone for its figures.', allHint:'All stations at once: the darker the area, the more stations reach it within the chosen time.',
   wt:'Walking time shown', allT:'Nearest station (opaque)', allO:'Overlaid (transparent)', allHintO:'Walking zones of all stations, overlaid with transparency: the darker the area, the more zones cover it. Tick the walking times to show.', allHintT:'All stations and all walking times at once. Each colour shows the walking time to the nearest station: the darker, the farther.', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
   note:'Walking at 4.8 km/h on the OpenStreetMap pedestrian network; where OpenStreetMap is incomplete, areas are underestimated. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means the street network forces detours).',
-  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', toggle:'Français',
+  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', follow:'Follow the mouse', followHint:'Move the mouse over the map: the panel shows the walking time to the nearest station.', fh1:'Here: within', fh2:'min walk of', far:'More than 30 min on foot from any station.', also:'Also within reach of:', toggle:'Français',
   lines:{Blue:'Blue Line',Red:'Red Line',Orange:'Orange Line',Yellow:'Yellow Line',Green:'Green Line',Purple:'Purple Line'}},
  fr:{title:'À portée de métro', sub:"Riyadh : jusqu'où aller à pied depuis chaque station.", choose:'Choisir une station', all:'Toutes les stations (superposées)',
   hint:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.', allHint:'Toutes les stations à la fois : plus la zone est foncée, plus de stations la desservent dans le temps choisi.',
   wt:'Temps de marche affiché', allT:'Station la plus proche (opaque)', allO:'Superposé (transparent)', allHintO:'Zones de marche de toutes les stations, superposées en transparence : plus la zone est foncée, plus elle est couverte par de zones. Coche les temps de marche à afficher.', allHintT:"Toutes les stations et tous les temps de marche à la fois. Chaque couleur indique le temps de marche jusqu'à la station la plus proche : plus c'est foncé, plus c'est loin.", leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
   note:"Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap ; là où OpenStreetMap est incomplet, les zones sont sous-estimées. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours imposés par les rues).",
-  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', toggle:'English',
+  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', follow:'Suivre la souris', followHint:'Déplace la souris sur la carte : le panneau indique le temps de marche jusqu\'à la station la plus proche.', fh1:'Ici : à moins de', fh2:'min à pied de', far:'À plus de 30 min à pied de toute station.', also:'Aussi à portée de :', toggle:'English',
   lines:{Blue:'Ligne bleue',Red:'Ligne rouge',Orange:'Ligne orange',Yellow:'Ligne jaune',Green:'Ligne verte',Purple:'Ligne violette'}}
 };
 let lang = 'en', mode = '', cur = null, styleMode = 'near'; const on = new Set([5, 10, 15, 20, 25, 30]);
@@ -108,13 +112,16 @@ function area(g) { // km², from lon/lat
   }));
   return a;
 }
+function bbox(g) { let a = 1e9, b = 1e9, c = -1e9, d = -1e9; (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).forEach(p => p[0].forEach(([x, y]) => { if (x < a) a = x; if (x > c) c = x; if (y < b) b = y; if (y > d) d = y; })); return [a, b, c, d]; }
+function inRing(x, y, r) { let c = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const xi = r[i][0], yi = r[i][1], xj = r[j][0], yj = r[j][1]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+function inGeom(x, y, g) { return (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).some(p => inRing(x, y, p[0]) && !p.slice(1).some(h => inRing(x, y, h))); }
 const pctOf = (a, m) => 100 * a / (Math.PI * Math.pow(KMH * m / 60, 2));
 const lineList = p => String(p.lines || '').split('|').map(s => s.trim()).filter(Boolean);
 
 Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('stations.geojson')].map(p => p.then(r => { if (!r.ok) throw new Error(r.url); return r.json(); })))
 .then(([iso, lines, sts]) => {
   const byStation = {};
-  iso.features.forEach(f => { f.properties._a = area(f.geometry); (byStation[f.properties.station] = byStation[f.properties.station] || []).push(f); });
+  iso.features.forEach(f => { f.properties._a = area(f.geometry); f._b = bbox(f.geometry); (byStation[f.properties.station] = byStation[f.properties.station] || []).push(f); });
 
   L.geoJSON(lines, {pane:'lines', style: f => ({color: LINE_COLORS[lineList(f.properties)[0]] || '#666', weight:4, opacity:.95})}).addTo(map);
 
@@ -197,10 +204,23 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
 
   function reset() { clearIso(); mode = ''; cur = null; $('wtrow').hidden = true; showInfo(); showLegend(); }
 
+  let hl = null, raf = 0, follow = false;
+  function locate(x, y) { const res = {}; iso.features.forEach(f => { const b = f._b; if (x < b[0] || x > b[2] || y < b[1] || y > b[3] || !inGeom(x, y, f.geometry)) return; const n = f.properties.station, m = f.properties.minutes; if (!(n in res) || m < res[n]) res[n] = m; }); return res; }
+  function live(ll) {
+    const res = locate(ll.lng, ll.lat), list = Object.keys(res).map(n => [n, res[n], map.distance(ll, markers[n].getLatLng())]).sort((a, b) => a[1] - b[1] || a[2] - b[2]);
+    if (hl && hl !== cur) markers[hl].setStyle(base); hl = null;
+    const el = $('info'); el.innerHTML = '';
+    const add = (t, b) => { const d = document.createElement('div'); if (b) d.style.fontWeight = 600; d.textContent = t; el.appendChild(d); };
+    if (!list.length) { add(tr('far')); return; }
+    hl = list[0][0]; if (hl !== cur) markers[hl].setStyle({radius:8, fillColor:'#ffd400'});
+    add(tr('fh1') + ' ' + list[0][1] + ' ' + tr('fh2') + ' ' + list[0][0], true);
+    if (list.length > 1) add(tr('also') + ' ' + list.slice(1, 5).map(x => x[0] + ' (' + x[1] + ')').join(', ') + (list.length > 5 ? '…' : ''));
+  }
+
   function applyLang() {
     document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
     $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note');
-    $('t_wt').textContent = tr('wt'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
+    $('t_wt').textContent = tr('wt'); $('follow').textContent = tr('follow'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
     [...$('sty').options].forEach(o => { o.textContent = o.value === 'near' ? tr('allT') : tr('allO'); });
     document.querySelectorAll('#chips .tm').forEach(e => { e.textContent = e.dataset.m + ' ' + tr('min'); });
     buildSelect(); showInfo(); showLegend();
@@ -210,6 +230,10 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
   $('chips').addEventListener('change', e => { const c = e.target, m = +c.value; c.checked ? on.add(m) : on.delete(m); if (mode === 'all') showAll(false); });
   $('sty').addEventListener('change', () => { styleMode = $('sty').value; if (mode === 'all') showAll(false); });
   $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
+  $('follow').addEventListener('click', () => { follow = !follow; $('follow').setAttribute('aria-pressed', follow);
+    if (follow) $('info').textContent = tr('followHint'); else { if (hl && hl !== cur) markers[hl].setStyle(base); hl = null; showInfo(); } });
+  map.on('mousemove', e => { if (!follow || raf) return; raf = requestAnimationFrame(() => { raf = 0; live(e.latlng); }); });
+  map.on('click', e => { if (follow) live(e.latlng); });
   applyLang();
   showAll(); $('sel').value = '__all';   // ouverture : toutes les stations superposées
 })
@@ -218,7 +242,7 @@ Promise.all([fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetch('s
   $('info').textContent = tr('err') + (e.message || '') + tr('err2');
 });
 $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note'); $('lang').textContent = tr('toggle'); $('t_leg').textContent = tr('leg');
-$('sel').innerHTML = '<option>' + tr('choose') + '</option>'; $('info').textContent = tr('hint');
+$('sel').innerHTML = '<option>' + tr('choose') + '</option>'; $('info').textContent = tr('hint'); $('follow').textContent = tr('follow');
 </script>
 </body>
 </html>
