@@ -71,7 +71,7 @@ const T = {
   walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', toggle:'English',
   lines:{Blue:'Ligne bleue',Red:'Ligne rouge',Orange:'Ligne orange',Yellow:'Ligne jaune',Green:'Ligne verte',Purple:'Ligne violette'}}
 };
-let lang = 'en', mode = '', cur = null, styleMode = 'ov'; const on = new Set([5, 10, 15, 20, 25, 30]);
+let lang = 'en', mode = '', cur = null, styleMode = 'near'; const on = new Set([5, 10, 15, 20, 25, 30]);
 const tr = k => T[lang][k];
 const $ = id => document.getElementById(id);
 
@@ -97,6 +97,7 @@ Object.keys(MIN_COLORS).forEach(m => {
   l.append(c, sw, t); $('chips').appendChild(l);
 });
 ['ov', 'near'].forEach(v => { const o = document.createElement('option'); o.value = v; $('sty').appendChild(o); });
+$('sty').value = styleMode;
 
 function area(g) { // km², from lon/lat
   const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates; let a = 0;
