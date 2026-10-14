@@ -50,9 +50,11 @@ const MIN_COLORS = {5:'#0f3d4c', 10:'#1f6a7d', 15:'#4f97a6', 20:'#86bcc6', 25:'#
 
 const map = L.map('map', {zoomControl:false}).setView([24.71, 46.69], 11);
 L.control.zoom({position:'topright'}).addTo(map);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  {maxZoom:19, attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}).addTo(map);
-[['iso',350],['lines',450],['stations',650]].forEach(([n,z]) => { map.createPane(n).style.zIndex = z; });
+[['iso',350],['labels',400],['lines',450],['stations',650]].forEach(([n,z]) => { map.createPane(n).style.zIndex = z; });
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:16, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:16, pane:'labels'}).addTo(map);
 
 const legend = document.getElementById('legend');
 Object.keys(MIN_COLORS).forEach(m => {
