@@ -109,7 +109,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 .blist .n{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
 .blist .rd{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .blist .pp{width:46px;text-align:right;font-variant-numeric:tabular-nums}
-.blist .gm{width:56px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.blist .gm{width:78px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .blist .hd{cursor:default;color:var(--muted);font-size:12px}
 .blist .hd:hover{background:none}
 #bdet{margin:10px 0 0}
@@ -241,7 +241,8 @@ const T = {
   loadingB:'Loading the footbridge analysis…', err2b:'. Check that passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson and passerelles_stats.json sit next to this page.',
   bSum:(n, k) => [cmp(n), 'more people within 15 min on foot of a station with these ' + k + ' footbridges.'],
   bSum2:(a, b) => cmp(a) + ' more within 10 min · ' + cmp(b) + ' people in all reach a station faster.',
-  bHead:['Site', 'People', 'Gain'], bAvg:'min',
+  bHead:['Site', 'People', 'Time saved'], bAvg:'min',
+  bIntro:'For each site: how many people would reach a station faster, and how many minutes they would save on average. Click a site to see where they live.',
   bBig:'people reach a station faster',
   bGain:(a, m) => 'They save ' + a + ' min on average (up to ' + m + ' min).',
   bNew:(a, b) => fmt(a) + ' people come within 10 min of a station, ' + fmt(b) + ' within 15 min.',
@@ -254,7 +255,7 @@ const T = {
   bExLeg:['Mapped, in the walking network', 'Mapped, not connected to any street'],
   bBack:'All sites', bExL:'Show footbridges and underpasses already mapped',
   bExT:s => s === 'unlinkable' ? 'Mapped in OpenStreetMap, not connected to any street (ignored)' : 'Mapped in OpenStreetMap, in the walking network',
-  bLeg:'Minutes saved to reach the nearest station', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
+  bLeg:'Green areas: people who would reach a station faster with the footbridge. Darker = more minutes saved.', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
   rcN:{motorway:'Expressway', trunk:'Expressway', motorway_link:'Expressway ramp', trunk_link:'Expressway ramp', primary:'Major avenue'},
   rc:{motorway:'an expressway', trunk:'an expressway', motorway_link:'an expressway ramp', trunk_link:'an expressway ramp', primary:'a major avenue'},
   noteB:'Each numbered line is a proposed footbridge; the green areas are where people would reach a station faster, darker for bigger gains. Sites are ranked by the walking time saved by everyone within 30 min of a station, at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
@@ -292,7 +293,8 @@ const T = {
   loadingB:"Chargement de l'analyse des passerelles…", err2b:'. Vérifie que passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson et passerelles_stats.json sont à côté de cette page.',
   bSum:(n, k) => [cmp(n), "habitants de plus à moins de 15 min à pied d'une station avec ces " + k + ' passerelles.'],
   bSum2:(a, b) => cmp(a) + ' de plus à moins de 10 min · ' + cmp(b) + ' habitants au total rejoignent une station plus vite.',
-  bHead:['Site', 'Habitants', 'Gain'], bAvg:'min',
+  bHead:['Site', 'Habitants', 'Temps gagné'], bAvg:'min',
+  bIntro:"Pour chaque site : combien d'habitants rejoindraient une station plus vite, et combien de minutes ils gagneraient en moyenne. Clique un site pour voir où ils habitent.",
   bBig:'habitants rejoignent une station plus vite',
   bGain:(a, m) => 'Ils gagnent ' + String(a).replace('.', ',') + ' min en moyenne (jusqu\'à ' + String(m).replace('.', ',') + ' min).',
   bNew:(a, b) => fmt(a) + " habitants passent à moins de 10 min d'une station, " + fmt(b) + ' à moins de 15 min.',
@@ -305,7 +307,7 @@ const T = {
   bExLeg:['Cartographié, dans le réseau piéton', 'Cartographié, relié à aucune rue'],
   bBack:'Tous les sites', bExL:'Afficher les passerelles et souterrains déjà cartographiés',
   bExT:s => s === 'unlinkable' ? "Cartographié dans OpenStreetMap, relié à aucune rue (ignoré)" : 'Cartographié dans OpenStreetMap, dans le réseau piéton',
-  bLeg:"Minutes gagnées pour rejoindre la station la plus proche", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
+  bLeg:"Zones vertes : habitants qui rejoindraient une station plus vite grâce à la passerelle. Plus c'est foncé, plus ils gagnent de minutes.", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
   rcN:{motorway:'Voie rapide', trunk:'Voie rapide', motorway_link:'Bretelle de voie rapide', trunk_link:'Bretelle de voie rapide', primary:'Grande avenue'},
   rc:{motorway:"d'une voie rapide", trunk:"d'une voie rapide", motorway_link:"d'une bretelle de voie rapide", trunk_link:"d'une bretelle de voie rapide", primary:"d'une grande avenue"},
   noteB:"Chaque trait numéroté est une passerelle proposée ; les zones vertes montrent où les habitants rejoindraient une station plus vite, plus foncé pour les plus gros gains. Les sites sont classés selon le temps de marche gagné par tous les habitants à moins de 30 min d'une station, à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
@@ -459,7 +461,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '20';   // bump after each data update so browsers reload the files
+const V = '21';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -734,6 +736,7 @@ function showBrg() {
   const [big, lead] = tr('bSum')(c.within_15min.after - c.within_15min.before, n);
   add(s, 'big', '+' + big); add(s, 'lead', lead);
   add(s, 'sm', '+' + tr('bSum2')(c.within_10min.after - c.within_10min.before, c.people_gaining));
+  add(s, 'hint', tr('bIntro'));
   const ul = $('blist'); ul.innerHTML = '';
   const hd = document.createElement('li'); hd.className = 'hd';
   hd.innerHTML = '<span class="n" style="background:none"></span><span class="rd"></span><span class="pp"></span><span class="gm"></span>';
