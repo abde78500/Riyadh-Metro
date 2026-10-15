@@ -52,6 +52,7 @@ select:focus-visible,#lang:focus-visible{outline:2px solid #8a4a28;outline-offse
 #follow{width:100%;margin-top:8px;font:inherit;padding:7px 8px;border:1px solid #8a4a28;border-radius:4px;background:#fff;color:#8a4a28;cursor:pointer}
 #follow[aria-pressed="true"]{background:#8a4a28;color:#fff}
 #follow:focus-visible{outline:2px solid #8a4a28;outline-offset:1px}
+.note a{color:#8a4a28;font-size:13px}
 .error{color:#9b1c1c}
 .leaflet-tooltip{font-family:inherit}
 </style>
@@ -67,6 +68,7 @@ select:focus-visible,#lang:focus-visible{outline:2px solid #8a4a28;outline-offse
   <div id="stat"></div>
   <div id="info"></div>
   <div class="legend" id="legend"></div>
+  <p class="note"><a id="lnk" href="portee-metro.html"></a></p>
   <p class="note" id="t_note"></p>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -81,7 +83,7 @@ const T = {
   hint:'Click a station on the map or pick one from the list. Hover a zone for its figures.', allHint:'All stations at once: the darker the area, the more stations reach it within the chosen time.',
   wt:'Walking time shown', allT:'Nearest station (opaque)', allO:'Overlaid (transparent)', allHintO:'Walking zones of all stations, overlaid with transparency: the darker the area, the more zones cover it. Tick the walking times to show.', allHintT:'All stations and all walking times at once. Each colour shows the walking time to the nearest station: the darker, the farther.', leg:'Walking time (darker = farther)', min:'min', ex:'Interchange station', none:'No area computed for this station.',
   note:'Walking at 4.8 km/h on the OpenStreetMap pedestrian network; where OpenStreetMap is incomplete, areas are underestimated. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means the street network forces detours). In the all-stations view, bars show the share of the city\'s population. Population: WorldPop 2024 estimates (CC BY 4.0).',
-  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', ppl:'people', hArea:'Area', hPeople:'People', hShare:'% of city',
+  walk:'walk', disc:'of the straight-line disc', err:'Could not load ', err2:'. Check that the three .geojson files sit next to this page and open it from a web server such as GitHub Pages.', other:'Other', lnk:'Try the live metro time map →', ppl:'people', hArea:'Area', hPeople:'People', hShare:'% of city',
   stAll: (p, n, m) => p == null ? [cmp(n), 'people live within ' + m + ' min on foot of a metro station.'] : [Math.round(p) + '%', 'of the population of ' + lab() + ' (' + cmp(n) + ' people) lives within ' + m + ' min on foot of a metro station.'],
   stOne: (n, m, name) => [cmp(n), 'people within ' + m + ' min on foot of ' + name],
   rank: (k, N, m) => 'Rank #' + k + ' of ' + N + ' stations for people within ' + m + ' min',
@@ -92,7 +94,7 @@ const T = {
   hint:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.', allHint:'Toutes les stations à la fois : plus la zone est foncée, plus de stations la desservent dans le temps choisi.',
   wt:'Temps de marche affiché', allT:'Station la plus proche (opaque)', allO:'Superposé (transparent)', allHintO:'Zones de marche de toutes les stations, superposées en transparence : plus la zone est foncée, plus elle est couverte par de zones. Coche les temps de marche à afficher.', allHintT:"Toutes les stations et tous les temps de marche à la fois. Chaque couleur indique le temps de marche jusqu'à la station la plus proche : plus c'est foncé, plus c'est loin.", leg:'Temps de marche (plus foncé = plus loin)', min:'min', ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.',
   note:"Marche à 4,8 km/h sur le réseau piéton d'OpenStreetMap ; là où OpenStreetMap est incomplet, les zones sont sous-estimées. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours imposés par les rues). Dans la vue toutes stations, les barres indiquent la part de la population de la ville. Population : estimations WorldPop 2024 (CC BY 4.0).",
-  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', ppl:'habitants', hArea:'Surface', hPeople:'Habitants', hShare:'% ville',
+  walk:'à pied', disc:'du disque en ligne droite', err:'Impossible de charger ', err2:'. Vérifie que les trois fichiers .geojson sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', other:'Autres', lnk:'Essayer la carte des temps en métro en direct →', ppl:'habitants', hArea:'Surface', hPeople:'Habitants', hShare:'% ville',
   stAll: (p, n, m) => p == null ? [cmp(n), "habitants vivent à moins de " + m + " min à pied d'une station de métro."] : [Math.round(p) + ' %', 'de la population de ' + lab() + ' (' + cmp(n) + " habitants) vit à moins de " + m + " min à pied d'une station de métro."],
   stOne: (n, m, name) => [cmp(n), 'habitants à moins de ' + m + ' min à pied de ' + name],
   rank: (k, N, m) => 'Rang n°' + k + ' sur ' + N + ' stations pour les habitants à moins de ' + m + ' min',
@@ -285,7 +287,7 @@ Promise.all([...[fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetc
   function applyLang() {
     document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
     $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note');
-    $('t_wt').textContent = tr('wt'); $('follow').textContent = tr('follow'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
+    $('t_wt').textContent = tr('wt'); $('follow').textContent = tr('follow'); $('lnk').textContent = tr('lnk'); $('t_leg').textContent = tr('leg'); $('lang').textContent = tr('toggle');
     [...$('sty').options].forEach(o => { o.textContent = o.value === 'near' ? tr('allT') : tr('allO'); });
     document.querySelectorAll('#chips .tm').forEach(e => { e.textContent = e.dataset.m + ' ' + tr('min'); });
     buildSelect(); showInfo(); showLegend(); showStat();
@@ -307,7 +309,7 @@ Promise.all([...[fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetc
   $('info').textContent = tr('err') + (e.message || '') + tr('err2');
 });
 $('t_title').textContent = tr('title'); $('t_sub').textContent = tr('sub'); $('t_note').textContent = tr('note'); $('lang').textContent = tr('toggle'); $('t_leg').textContent = tr('leg');
-$('sel').innerHTML = '<option>' + tr('choose') + '</option>'; $('info').textContent = tr('hint'); $('follow').textContent = tr('follow');
+$('sel').innerHTML = '<option>' + tr('choose') + '</option>'; $('info').textContent = tr('hint'); $('follow').textContent = tr('follow'); $('lnk').textContent = tr('lnk');
 </script>
 </body>
 </html>
