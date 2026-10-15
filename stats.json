@@ -1,0 +1,13 @@
+{
+ "city_pop": 7031634,
+ "label_en": "the metro area (15 km around the network)",
+ "label_fr": "la zone du métro (15 km autour du réseau)",
+ "union": {
+  "5": 95172,
+  "10": 374643,
+  "15": 763757,
+  "20": 1198374,
+  "25": 1602885,
+  "30": 1958085
+ }
+}
