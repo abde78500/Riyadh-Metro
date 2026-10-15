@@ -3,55 +3,84 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metro time map – Riyadh</title>
+<title>Within metro reach – Riyadh</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Sans+Arabic:wght@400&display=swap">
 <style>
-:root{--ink:#16222b;--muted:#5d6b75;--paper:#fbfaf7;--rule:#d9d5cc;--acc:#8a4a28}
+:root{--ink:#16222b;--muted:#5d6b75;--paper:#fbfaf7;--rule:#d9d5cc;--acc:#8a4a28;--soft:#efebe3}
 html,body{height:100%;margin:0}
 body{font-family:"IBM Plex Sans","IBM Plex Sans Arabic",system-ui,sans-serif;color:var(--ink)}
 #map{height:100%;background:#e8e6e0}
 #map canvas.tm{position:absolute;left:0;top:0;pointer-events:none}
-#panel{position:absolute;z-index:1000;top:12px;left:12px;width:310px;max-width:calc(100% - 24px);box-sizing:border-box;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;font-size:14px;line-height:1.45;box-shadow:0 4px 18px rgba(22,34,43,.18);max-height:calc(100% - 24px);overflow:auto}
+#panel{position:absolute;z-index:1000;top:12px;left:12px;width:330px;max-width:calc(100% - 24px);box-sizing:border-box;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;font-size:14px;line-height:1.45;box-shadow:0 4px 18px rgba(22,34,43,.18);max-height:calc(100% - 24px);overflow:auto}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-h1{font-size:19px;line-height:1.2;margin:0 0 4px;font-weight:600}
+h1{font-size:20px;line-height:1.2;margin:0 0 4px;font-weight:600}
 button{font:inherit;cursor:pointer}
+.tools{display:flex;gap:6px;flex:none}
 #lang{font-size:12px;padding:3px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink)}
-.sub{margin:0 0 10px;color:var(--muted);font-size:13px}
+#infob{font-size:13px;font-weight:600;width:26px;height:26px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#fff;color:var(--ink)}
+.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+/* main tabs */
+.tabs{display:flex;gap:4px;padding:4px;background:var(--soft);border-radius:8px;margin:0 0 12px}
+.tabs button{flex:1;border:0;border-radius:6px;background:none;padding:8px 6px;color:var(--ink);text-align:center;line-height:1.2}
+.tabs button b{display:block;font-size:14px}
+.tabs button small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.tabs button[aria-selected="true"]{background:var(--acc);color:#fff;box-shadow:0 1px 3px rgba(22,34,43,.2)}
+.tabs button[aria-selected="true"] small{color:#f3e3c3}
+/* segmented control inside a tab */
+.seg{display:flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin:0 0 8px}
+.seg button{flex:1;border:0;background:#fff;padding:7px 6px;color:var(--ink);font-size:13px}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:#f3e3c3;font-weight:600}
 #follow{width:100%;padding:7px 8px;border:1px solid var(--acc);border-radius:4px;background:#fff;color:var(--acc)}
 #follow[aria-pressed="true"]{background:var(--acc);color:#fff}
-#follow:focus-visible,#lang:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.chk{display:flex;gap:6px;align-items:center;margin:8px 0 0;font-size:13px}
-.chk input{accent-color:var(--acc)}
-#hint{margin:10px 0 0;font-size:13px;color:var(--muted)}
-#out{margin:10px 0 0;min-height:56px}
+button:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.hint{margin:10px 0 0;font-size:13px;color:var(--muted)}
+#out{margin:10px 0 0;min-height:44px}
 #out .big{font-size:26px;font-weight:600;color:var(--acc);line-height:1.1;margin-right:4px}
 details{border-top:1px solid var(--rule);padding-top:8px;margin-top:10px;font-size:13px}
 summary{cursor:pointer;color:var(--muted)}
 .sl{display:grid;grid-template-columns:1fr auto;gap:0 8px;margin-top:8px}
 .sl input{grid-column:1/3;width:100%;accent-color:var(--acc)}
+select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink)}
+#wtrow{margin-top:8px;font-size:13px;color:var(--muted)}
+#chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
+#chips label{display:flex;align-items:center;gap:5px;padding:3px 7px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);cursor:pointer}
+#chips input{margin:0}
+#info{margin:12px 0;min-height:20px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+#stat{margin:12px 0 0}
+#stat .big{font-size:28px;font-weight:600;line-height:1.1;color:var(--acc);font-variant-numeric:tabular-nums}
+#stat .lead{font-size:13px;margin:2px 0 6px}
+#stat .hd{font-size:12px;color:var(--muted);margin:8px 0 2px}
+#stat .gauge{height:8px;background:#e7e4dc;border-radius:4px;overflow:hidden;margin:4px 0 6px}
+#stat .gauge i{display:block;height:100%;background:var(--acc)}
+#stat .rk{margin:4px 0 0;padding:0;list-style:none;font-size:13px}
+#stat .rk li{display:flex;gap:8px;margin:3px 0;cursor:pointer}
+#stat .rk li:hover .nm{text-decoration:underline}
+#stat .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stat .tp{width:54px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+/* legend (shared by all modes) */
 .legend{border-top:1px solid var(--rule);padding-top:10px;margin-top:10px}
 .legend p{margin:0 0 6px;font-size:13px;color:var(--muted)}
 .row{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:13px}
-.sw{width:22px;height:12px;border-radius:2px;border:1px solid rgba(22,34,43,.25)}
-.note{margin:10px 0 0;font-size:12px;color:var(--muted)}
-#tip{position:absolute;z-index:900;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:2px 7px;border-radius:3px;display:none;white-space:nowrap}
-.note a{color:var(--acc)}
+.sw{width:22px;height:12px;border-radius:2px;border:1px solid rgba(22,34,43,.25);flex:none}
+.lab{width:52px;flex:none;white-space:nowrap}
+.legend.simple .lab{width:auto}
+.bar{flex:1;height:6px;background:#e7e4dc;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc)}
+.val{width:66px;text-align:right;flex:none;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pop{width:52px;text-align:right;flex:none;font-variant-numeric:tabular-nums;color:var(--muted)}
+.row.head{margin:0 0 2px;color:var(--muted);font-size:12px}
+.legend.simple .bar,.legend.simple .val,.legend.simple .pop,.legend.simple .row.head{display:none}
+.note{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.credit{margin:10px 0 0;font-size:12px;color:var(--muted)}
+.credit a{color:var(--acc)}
 .error{color:#9b1c1c}
-.switch{display:flex;gap:4px;margin:0 0 12px;padding:4px;background:#efebe3;border-radius:8px}
-.switch a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;color:var(--ink);text-align:center;line-height:1.2}
-.switch a.on{background:#fff;box-shadow:0 1px 3px rgba(22,34,43,.15);cursor:default}
-.switch a.go{background:#8a4a28;color:#fff;animation:glow 2.4s ease-in-out infinite}
-.switch a.go:hover{background:#6e3a1f}
-.switch a.go:focus-visible{outline:2px solid #16222b;outline-offset:2px}
-.switch .new{font-size:10px;font-weight:600;letter-spacing:.04em;background:#f5c400;color:#16222b;border-radius:3px;padding:1px 4px;white-space:nowrap}
-@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(138,74,40,.45)}50%{box-shadow:0 0 0 5px rgba(0,0,0,0)}}
-@media (prefers-reduced-motion:reduce){.switch a.go{animation:none}}
-.tools{display:flex;gap:6px;flex:none}
-#infob{font:inherit;font-size:13px;font-weight:600;width:26px;height:26px;padding:0;border:1px solid var(--rule);border-radius:50%;background:#fff;color:var(--ink);cursor:pointer}
-#infob:focus-visible{outline:2px solid #8a4a28;outline-offset:1px}
+#tip{position:absolute;z-index:900;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:2px 7px;border-radius:3px;display:none;white-space:nowrap}
+.leaflet-tooltip{font-family:inherit}
 #about{position:fixed;inset:0;z-index:2000;background:rgba(22,34,43,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 #about[hidden]{display:none}
 #about .box{background:var(--paper);border-radius:8px;max-width:560px;width:100%;max-height:calc(100% - 32px);overflow:auto;padding:20px 22px;font-size:14px;line-height:1.5;box-shadow:0 10px 40px rgba(22,34,43,.35);position:relative}
@@ -60,58 +89,141 @@ summary{cursor:pointer;color:var(--muted)}
 #about p{margin:4px 0}
 #about ul{margin:4px 0;padding-left:18px}
 #about li{margin:3px 0}
-#about a{color:#8a4a28}
 #about .by{color:var(--muted);margin:0 0 8px}
-#closeb{position:absolute;top:10px;right:10px;font:inherit;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);cursor:pointer;border-radius:4px}
-#closeb:focus-visible{outline:2px solid #8a4a28}
-.credit{margin:8px 0 0;font-size:12px;color:var(--muted)}
+#closeb{position:absolute;top:10px;right:10px;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);border-radius:4px}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="panel">
-  <nav class="switch" aria-label="Maps"><a class="on" aria-current="page">🚇 <span id="t_tabM"></span></a><a class="go" href="pied.html">🚶 <span id="t_tabW"></span> <span class="new" id="t_new"></span></a></nav>
   <div class="top"><h1 id="t1"></h1><div class="tools"><button id="infob" type="button" aria-haspopup="dialog">i</button><button id="lang" type="button"></button></div></div>
   <p class="sub" id="sub"></p>
-  <button id="follow" type="button" aria-pressed="false"></button>
-  <label class="chk"><input type="checkbox" id="only"><span id="lonly"></span></label>
-  <p id="hint"></p>
-  <div id="out"></div>
-  <details><summary id="lset"></summary><div id="sliders"></div></details>
+  <div class="tabs" role="tablist">
+    <button id="tabR" type="button" role="tab" aria-selected="true">🚇 <b id="t_tabR"></b><small id="t_tabRs"></small></button>
+    <button id="tabC" type="button" role="tab" aria-selected="false">📍 <b id="t_tabC"></b><small id="t_tabCs"></small></button>
+  </div>
+  <section id="pR">
+    <div class="seg" role="group"><button id="segM" type="button" aria-pressed="true"></button><button id="segW" type="button" aria-pressed="false"></button></div>
+    <button id="follow" type="button" aria-pressed="true"></button>
+    <p class="hint" id="hint"></p>
+    <div id="out"></div>
+    <details id="setbox"><summary id="lset"></summary><div id="sliders"></div></details>
+  </section>
+  <section id="pC" hidden>
+    <select id="sel" aria-label="Station"></select>
+    <div id="wtrow" hidden><div id="t_wt"></div><div id="chips"></div><select id="sty" aria-label="Display"><option value="near"></option><option value="over"></option></select></div>
+    <div id="stat"></div>
+    <div id="info"></div>
+  </section>
   <div class="legend" id="legend"></div>
-  <p class="note" id="note"></p>
+  <details><summary id="t_how"></summary><p class="note" id="note"></p></details>
   <p class="credit" id="t_credit"></p>
 </div>
 <div id="about" hidden role="dialog" aria-modal="true" aria-labelledby="ab_t"><div class="box"><button id="closeb" type="button" aria-label="Close">×</button><div id="ab_c"></div></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
+const LINE_ORDER = ['Blue', 'Red', 'Orange', 'Yellow', 'Green', 'Purple'];
 const LINE_COLORS = {Blue:'#1d6fc4', Red:'#e03a3a', Orange:'#f28c28', Yellow:'#f5c400', Green:'#2e9e4f', Purple:'#8a4fb8'};
-const BANDS = ['#f3e3c3', '#e6c58f', '#d29f5f', '#b3733b', '#8a4a28', '#5a2c19'];
-const RGB = BANDS.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+const MIN_COLORS = {5:'#f6ead0', 10:'#ecd3a6', 15:'#e0b97d', 20:'#cf9a5a', 25:'#b97b3e', 30:'#9f5f2d', 40:'#834723', 50:'#66331b', 60:'#4a2213'};
+const TH = [5, 10, 15, 20, 25, 30, 40, 50, 60], TMAX = 60, RGBM = {};
+TH.forEach(m => { const h = MIN_COLORS[m]; RGBM[m] = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16)); });
+const KMH = 4.8;   // walking speed used for the precomputed station zones
+const AUTH = 'KHAMASSI Abderrahmane';
+const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${AUTH}</p>
+<p>One map, two questions. <b>Reach</b>: from any point, how far can you get on foot, or on foot and by metro? <b>Coverage</b>: how far can you walk from each of the 83 stations, and how many people live within reach?</p>
+<h3>Method</h3><ul>
+<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses), keeping its largest connected part. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
+<li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap. Door-to-door time = walk to a station + wait + ride (+ transfers) + walk from the arrival station, found with Dijkstra's algorithm on both networks, live in your browser.</li>
+<li>Default assumptions, adjustable under Reach: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li>
+<li>Coverage zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li></ul>
+<h3>Limits</h3><ul>
+<li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>
+<li>Where OpenStreetMap lacks footpaths or includes private compounds, walking times can be over- or underestimated. Crossings depend on how traffic lights and pedestrian crossings are mapped in OpenStreetMap: a missing crossing makes a road look impassable.</li>
+<li>Each station is a single point; entrances are not modelled. WorldPop figures are modelled estimates, not a census.</li></ul>
+<h3>Sources</h3><ul>
+<li>Metro lines, stations and streets: © OpenStreetMap contributors (ODbL)</li>
+<li>Population: WorldPop 2024 (CC BY 4.0)</li>
+<li>Basemap: Esri World Light Gray Canvas</li>
+<li>Tools: ArcGIS Pro, Python, Leaflet</li></ul>`;
+const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un projet de ${AUTH}</p>
+<p>Une carte, deux questions. <b>Portée</b> : depuis n'importe quel point, jusqu'où peut-on aller à pied, ou à pied et en métro ? <b>Couverture</b> : jusqu'où peut-on marcher depuis chacune des 83 stations, et combien d'habitants vivent à portée ?</p>
+<h3>Méthode</h3><ul>
+<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains), en gardant sa plus grande partie connectée. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
+<li>Le réseau de métro est construit à partir des 6 lignes et 83 stations d'OpenStreetMap. Temps de porte à porte = marche jusqu'à une station + attente + trajet (+ correspondances) + marche depuis la station d'arrivée, calculé avec l'algorithme de Dijkstra sur les deux réseaux, en direct dans ton navigateur.</li>
+<li>Hypothèses par défaut, réglables dans Portée : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li>
+<li>Les zones de Couverture utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li></ul>
+<h3>Limites</h3><ul>
+<li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>
+<li>Là où OpenStreetMap manque de cheminements piétons ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. Les traversées dépendent des feux et passages piétons cartographiés dans OpenStreetMap : un passage manquant rend une avenue infranchissable sur la carte.</li>
+<li>Chaque station est un point unique ; les bouches de métro ne sont pas modélisées. Les chiffres WorldPop sont des estimations modélisées, pas un recensement.</li></ul>
+<h3>Sources</h3><ul>
+<li>Lignes, stations et rues : © contributeurs OpenStreetMap (ODbL)</li>
+<li>Population : WorldPop 2024 (CC BY 4.0)</li>
+<li>Fond de carte : Esri World Light Gray Canvas</li>
+<li>Outils : ArcGIS Pro, Python, Leaflet</li></ul>`;
 const T = {
- en:{title:'Metro time map', sub:'Riyadh: how long it takes to get anywhere from a start point, walking and riding the metro.',
-  lnk:'← Walking zones and population by station', follow:'Follow the mouse', following:'Following: click the map to freeze', only:'Walking only (no metro)',
-  hint:'Move the mouse over the map: the start point follows it. Click to freeze it, then hover to read travel times.',
-  set:'Assumptions', speed:'Metro commercial speed', wait:'Wait for a train', transfer:'Transfer between lines', walk:'Walking speed',
-  kmh:'km/h', min:'min', leg:'Travel time from the start point (minutes)', near:'Nearest station', walkmin:'min on foot',
-  stn:'stations within 30 min', stn60:'within 60 min', over:'60+ min',
-  note:"Walking follows the real OpenStreetMap pedestrian network (motorways excluded); areas more than 400 m from any street are left blank; trains run at the commercial speed set above, plus waiting and transfer times. Headways of 3–5 min at peak and 5–10 min off-peak suggest a wait of about 3 min. No traffic, no timetable. Lines and stations: OpenStreetMap.",
-  err:'Could not load ', loading:'Loading the walking network…', nostreet:'No street within walking reach of this point.', nost60:'No station within 60 min on foot.', err2:'. Check that network.json, lignes.geojson and walk_graph.json sit next to this page and open it from a web server such as GitHub Pages.', toggle:'Français', tabM:'Metro time', tabW:'Walking reach', new:'+ population', info:'About: sources and method', credit:'Map by KHAMASSI Abderrahmane · ', creditMore:'sources & method', about:"<h2 id=\"ab_t\">About this map</h2><p class=\"by\">A project by KHAMASSI Abderrahmane</p>\n<p>Pick a start point (move the mouse, or click the map or a station) to see how long it takes to reach every part of Riyadh by walking and riding the metro. The companion <a href=\"pied.html\">walking map</a> shows how far you can walk from each station and how many people live within reach.</p>\n<h3>Method</h3><ul>\n<li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap, with the distance between consecutive stations along each line.</li>\n<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways excluded), keeping its largest connected part. Each point is attached to the nearest street; areas more than 400 m from any street are left blank.</li>\n<li>Travel time = walk to a station + wait for a train + ride (+ transfers) + walk from the arrival station. The fastest combination is found with Dijkstra's algorithm on both networks, computed live in your browser.</li>\n<li>Default assumptions, adjustable in the panel: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li></ul>\n<h3>Limits</h3><ul>\n<li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>\n<li>Where OpenStreetMap lacks footpaths, or includes private compounds, walking times can be over- or underestimated. Large roads are assumed crossable wherever streets meet.</li>\n<li>Each station is a single point; entrances are not modelled.</li></ul>\n<h3>Sources</h3><ul>\n<li>Metro lines, stations and streets: © OpenStreetMap contributors (ODbL)</li>\n<li>Population (walking map): WorldPop 2024 (CC BY 4.0)</li>\n<li>Basemap: Esri World Light Gray Canvas</li>\n<li>Tools: ArcGIS Pro, Python, Leaflet</li></ul>"},
- fr:{title:'Carte des temps en métro', sub:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
-  lnk:'← Zones de marche et population par station', follow:'Suivre la souris', following:'Suivi actif : clique sur la carte pour figer', only:'À pied seulement (sans métro)',
-  hint:"Déplace la souris sur la carte : le point de départ la suit. Clique pour le figer, puis survole la carte pour lire les temps de trajet.",
-  set:'Hypothèses', speed:'Vitesse commerciale du métro', wait:'Attente du train', transfer:'Correspondance entre lignes', walk:'Vitesse de marche',
-  kmh:'km/h', min:'min', leg:'Temps de trajet depuis le départ (minutes)', near:'Station la plus proche', walkmin:'min à pied',
-  stn:'stations à moins de 30 min', stn60:'à moins de 60 min', over:'60+ min',
-  note:"La marche suit le vrai réseau piéton d'OpenStreetMap (sans les autoroutes) ; les zones à plus de 400 m de toute rue restent vides ; les trains roulent à la vitesse commerciale réglée ci-dessus, plus l'attente et les correspondances. Des intervalles de 3 à 5 min en pointe et 5 à 10 min en creux suggèrent une attente d'environ 3 min. Ni trafic, ni horaires. Lignes et stations : OpenStreetMap.",
-  err:'Impossible de charger ', loading:'Chargement du réseau piéton…', nostreet:'Aucune rue à portée de marche depuis ce point.', nost60:'Aucune station à moins de 60 min à pied.', err2:'. Vérifie que network.json, lignes.geojson et walk_graph.json sont à côté de cette page et ouvre-la depuis un serveur web comme GitHub Pages.', toggle:'English', tabM:'Temps en métro', tabW:'À pied', new:'+ habitants', info:'À propos : sources et méthode', credit:'Carte réalisée par KHAMASSI Abderrahmane · ', creditMore:'sources et méthode', about:"<h2 id=\"ab_t\">À propos de cette carte</h2><p class=\"by\">Un projet de KHAMASSI Abderrahmane</p>\n<p>Choisis un point de départ (déplace la souris, ou clique sur la carte ou une station) pour voir le temps qu'il faut pour atteindre chaque endroit de Riyadh, à pied et en métro. La <a href=\"pied.html\">carte à pied</a> associée montre jusqu'où on peut marcher depuis chaque station et combien d'habitants vivent à portée.</p>\n<h3>Méthode</h3><ul>\n<li>Le réseau de métro est construit à partir des 6 lignes et 83 stations cartographiées dans OpenStreetMap, avec la distance entre stations successives le long de chaque ligne.</li>\n<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (sans les autoroutes), en gardant sa plus grande partie connectée. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 400 m de toute rue restent vides.</li>\n<li>Temps de trajet = marche jusqu'à une station + attente du train + trajet (+ correspondances) + marche depuis la station d'arrivée. La combinaison la plus rapide est trouvée avec l'algorithme de Dijkstra sur les deux réseaux, calculé en direct dans ton navigateur.</li>\n<li>Hypothèses par défaut, réglables dans le panneau : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li></ul>\n<h3>Limites</h3><ul>\n<li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>\n<li>Là où OpenStreetMap manque de cheminements piétons, ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. On suppose qu'on peut traverser les grandes routes partout où les rues se croisent.</li>\n<li>Chaque station est un point unique ; les bouches de métro ne sont pas modélisées.</li></ul>\n<h3>Sources</h3><ul>\n<li>Lignes, stations et rues : © contributeurs OpenStreetMap (ODbL)</li>\n<li>Population (carte à pied) : WorldPop 2024 (CC BY 4.0)</li>\n<li>Fond de carte : Esri World Light Gray Canvas</li>\n<li>Outils : ArcGIS Pro, Python, Leaflet</li></ul>"}
+ en:{title:'Within metro reach', toggle:'Français', info:'About: sources and method', credit:'Map by ' + AUTH + ' · ', creditMore:'sources & method', about:ABOUT_EN,
+  tabR:'Reach', tabRs:'from a point', tabC:'Coverage', tabCs:'around stations',
+  subR:'Riyadh: how long it takes to get anywhere from a start point, walking and riding the metro.',
+  subW:'Riyadh: how far you can walk from a start point, along the real streets.',
+  subC:'Riyadh: how far you can walk from each station, and how many people live within reach.',
+  segM:'Walk + metro', segW:'Walk only', follow:'Follow the mouse', following:'Following: click the map to freeze',
+  hintM:'Move the mouse over the map: the start point follows it. Click to freeze it, then hover to read travel times.',
+  hintW:'Move the mouse over the map: the colours show where you can walk from there. Click to freeze it.',
+  set:'Assumptions', speed:'Metro commercial speed', wait:'Wait for a train', transfer:'Transfer between lines', walk:'Walking speed', kmh:'km/h', min:'min',
+  legR:'Travel time from the start point', legW:'Walking time from the start point', legC:'Walking time from the station (darker = farther)',
+  near:'Nearest station', walkmin:'min on foot', stn:'stations within 30 min', stn60:'within 60 min', over:'60+ min',
+  how:'How to read this map',
+  noteR:'Colours show the door-to-door time from the start point. Walking follows the real OpenStreetMap street network (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses); areas more than 200 m from any street are left blank. Trains run at the commercial speed set under Assumptions, plus waiting and transfer times. No traffic, no timetable.',
+  noteC:'Zones show how far you can walk from a station along the real streets, at 4.8 km/h. Bars: area reached as a share of the disc you would cover walking in a straight line (a short bar means detours). In the all-stations view, bars show the share of the city\'s population. Population: WorldPop 2024 (CC BY 4.0).',
+  loading:'Loading the walking network…', loadingC:'Loading the station zones…', nostreet:'No street within walking reach of this point.', nost60:'No station within 60 min on foot.',
+  err:'Could not load ', err2:'. Check that network.json, lignes.geojson and walk_graph.json sit next to this page.', err2c:'. Check that isochrones_pied.geojson and stations.geojson sit next to this page.',
+  choose:'Choose a station', all:'All stations', hintC:'Click a station on the map or pick one from the list. Hover a zone for its figures.',
+  wt:'Walking time shown', allT:'Nearest station (opaque)', allO:'Overlaid (transparent)',
+  allHintO:'Walking zones of all stations, overlaid with transparency: the darker, the more zones cover it.',
+  allHintT:'Each colour shows the walking time to the nearest station: the darker, the farther. Click a zone to open its station.',
+  ex:'Interchange station', none:'No area computed for this station.', other:'Other',
+  disc:'of the straight-line disc', walkw:'walk', ppl:'people', hArea:'Area', hPeople:'People', hShare:'% of city',
+  stAll:(p, n, m) => p == null ? [cmp(n), 'people live within ' + m + ' min on foot of a metro station.'] : [Math.round(p) + '%', 'of the population of ' + lab() + ' (' + cmp(n) + ' people) lives within ' + m + ' min on foot of a metro station.'],
+  stOne:(n, m, name) => [cmp(n), 'people within ' + m + ' min on foot of ' + name],
+  rank:(k, N, m) => 'Rank #' + k + ' of ' + N + ' stations for people within ' + m + ' min',
+  share:p => p.toFixed(1) + '% of the population of ' + lab(),
+  topT:m => 'Top 5 stations: people within ' + m + ' min',
+  lines:{Blue:'Blue Line', Red:'Red Line', Orange:'Orange Line', Yellow:'Yellow Line', Green:'Green Line', Purple:'Purple Line'}},
+ fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
+  tabR:'Portée', tabRs:'depuis un point', tabC:'Couverture', tabCs:'autour des stations',
+  subR:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
+  subW:"Riyadh : jusqu'où on peut marcher depuis un point de départ, par les vraies rues.",
+  subC:"Riyadh : jusqu'où on peut marcher depuis chaque station, et combien d'habitants vivent à portée.",
+  segM:'À pied + métro', segW:'À pied seulement', follow:'Suivre la souris', following:'Suivi actif : clique sur la carte pour figer',
+  hintM:'Déplace la souris sur la carte : le point de départ la suit. Clique pour le figer, puis survole la carte pour lire les temps de trajet.',
+  hintW:"Déplace la souris sur la carte : les couleurs montrent jusqu'où tu peux marcher depuis ce point. Clique pour le figer.",
+  set:'Hypothèses', speed:'Vitesse commerciale du métro', wait:'Attente du train', transfer:'Correspondance entre lignes', walk:'Vitesse de marche', kmh:'km/h', min:'min',
+  legR:'Temps de trajet depuis le départ', legW:'Temps de marche depuis le départ', legC:'Temps de marche depuis la station (plus foncé = plus loin)',
+  near:'Station la plus proche', walkmin:'min à pied', stn:'stations à moins de 30 min', stn60:'à moins de 60 min', over:'60+ min',
+  how:'Comment lire cette carte',
+  noteR:"Les couleurs indiquent le temps de porte à porte depuis le départ. La marche suit le vrai réseau de rues d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains) ; les zones à plus de 200 m de toute rue restent vides. Les trains roulent à la vitesse réglée dans Hypothèses, plus l'attente et les correspondances. Ni trafic, ni horaires.",
+  noteC:"Les zones montrent jusqu'où on peut marcher depuis une station par les vraies rues, à 4,8 km/h. Barres : surface atteinte rapportée au disque qu'on couvrirait en ligne droite (une barre courte indique des détours). Dans la vue toutes stations, les barres indiquent la part de la population de la ville. Population : WorldPop 2024 (CC BY 4.0).",
+  loading:'Chargement du réseau piéton…', loadingC:'Chargement des zones des stations…', nostreet:'Aucune rue à portée de marche depuis ce point.', nost60:'Aucune station à moins de 60 min à pied.',
+  err:'Impossible de charger ', err2:'. Vérifie que network.json, lignes.geojson et walk_graph.json sont à côté de cette page.', err2c:'. Vérifie que isochrones_pied.geojson et stations.geojson sont à côté de cette page.',
+  choose:'Choisir une station', all:'Toutes les stations', hintC:'Clique sur une station de la carte ou choisis-la dans la liste. Survole une zone pour ses chiffres.',
+  wt:'Temps de marche affiché', allT:'Station la plus proche (opaque)', allO:'Superposé (transparent)',
+  allHintO:"Zones de marche de toutes les stations, superposées en transparence : plus c'est foncé, plus de zones la couvrent.",
+  allHintT:"Chaque couleur indique le temps de marche jusqu'à la station la plus proche : plus c'est foncé, plus c'est loin. Clique une zone pour ouvrir sa station.",
+  ex:'Station de correspondance', none:'Aucune zone calculée pour cette station.', other:'Autres',
+  disc:'du disque en ligne droite', walkw:'à pied', ppl:'habitants', hArea:'Surface', hPeople:'Habitants', hShare:'% ville',
+  stAll:(p, n, m) => p == null ? [cmp(n), "habitants vivent à moins de " + m + " min à pied d'une station de métro."] : [Math.round(p) + ' %', 'de la population de ' + lab() + ' (' + cmp(n) + " habitants) vit à moins de " + m + " min à pied d'une station de métro."],
+  stOne:(n, m, name) => [cmp(n), 'habitants à moins de ' + m + ' min à pied de ' + name],
+  rank:(k, N, m) => 'Rang n°' + k + ' sur ' + N + ' stations pour les habitants à moins de ' + m + ' min',
+  share:p => p.toFixed(1).replace('.', ',') + ' % de la population de ' + lab(),
+  topT:m => 'Top 5 des stations : habitants à moins de ' + m + ' min',
+  lines:{Blue:'Ligne bleue', Red:'Ligne rouge', Orange:'Ligne orange', Yellow:'Ligne jaune', Green:'Ligne verte', Purple:'Ligne violette'}}
 };
-let lang = 'en';
+let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
 const $ = id => document.getElementById(id);
 const P = {speed:40, wait:3, transfer:5, walk:4.8, only:false};
 const CELL = 8;
-
 /* CORE */
 let S = [], NODE = [], ADJ = [], KX = 1, KY = 110574, LAT0 = 24.7, LNG0 = 46.7;
 function toM(lat, lng) { return [(lng - LNG0) * KX, (lat - LAT0) * KY]; }
@@ -129,7 +241,7 @@ function setup(net) {
 const wm = () => P.walk * 1000 / 60;
 /* WALK NETWORK: real OpenStreetMap pedestrian graph (walk_graph.json) */
 let WN = null;
-const GCELL = 250, SNAP_GRID = 400, SNAP_PT = 1500;
+const GCELL = 250, SNAP_GRID = 200, SNAP_PT = 1500;
 function buildWalk(g) {
   const N = g.nodes.length / 2, M = g.edges.length / 3;
   const NX = new Float64Array(N), NY = new Float64Array(N);
@@ -229,38 +341,46 @@ function solve(ox, oy) {
 function timeAt(x, y, sol) { return sol && sol.T ? tSnap(snap(x, y, SNAP_GRID), sol.T, sol.o) : Infinity; }
 /* END CORE */
 
+/* ================= MAP ================= */
 const map = L.map('map', {zoomControl:false, zoomAnimation:false}).setView([24.71, 46.69], 11);
 L.control.zoom({position:'topright'}).addTo(map);
-[['time',360],['labels',400],['lines',450],['stations',650]].forEach(([n, z]) => { map.createPane(n).style.zIndex = z; });
+[['iso',350],['time',360],['labels',400],['lines',450],['stations',650]].forEach(([n, z]) => { map.createPane(n).style.zIndex = z; });
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:16, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors'}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {maxZoom:16, pane:'labels'}).addTo(map);
 
+const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
+const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
+const getJSON = u => fetch(u).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
+const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
+const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
+
+/* ================= REACH (from a point) ================= */
 const cv = document.createElement('canvas'), small = document.createElement('canvas'), ctx = cv.getContext('2d'), sctx = small.getContext('2d');
 cv.className = 'tm'; map.getPane('time').appendChild(cv);
 const tip = document.createElement('div'); tip.id = 'tip'; map.getContainer().appendChild(tip);
-
 let origin = null, sol = null, grid = null, follow = true, raf = 0, om = null;
+
 function refreshGrid() {
-  if (!S.length || !WN) return;
+  if (tab !== 'reach' || !S.length || !WN) return;
   const sz = map.getSize(), cols = Math.ceil(sz.x / CELL), rows = Math.ceil(sz.y / CELL);
   cv.width = sz.x; cv.height = sz.y; small.width = cols; small.height = rows;
   L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([0, 0]));
-  const X = new Float32Array(cols * rows), Y = new Float32Array(cols * rows);
+  const SP = new Array(cols * rows);
   for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
     const ll = map.containerPointToLatLng([c * CELL + CELL / 2, r * CELL + CELL / 2]), m = toM(ll.lat, ll.lng);
-    X[r * cols + c] = m[0]; Y[r * cols + c] = m[1];
+    SP[r * cols + c] = snap(m[0], m[1], SNAP_GRID);
   }
-  const SP = new Array(cols * rows); for (let i = 0; i < cols * rows; i++) SP[i] = snap(X[i], Y[i], SNAP_GRID);
-  grid = {cols, rows, X, Y, SP}; paint();
+  grid = {cols, rows, SP}; paint();
 }
 function paint() {
-  if (!grid || !origin) return;
+  if (tab !== 'reach' || !grid || !origin) return;
   const m0 = toM(origin.lat, origin.lng); sol = solve(m0[0], m0[1]);
   const {cols, rows} = grid, img = sctx.createImageData(cols, rows), a = img.data;
   for (let i = 0; i < cols * rows; i++) {
-    const t = sol.T ? tSnap(grid.SP[i], sol.T, sol.o) : Infinity; if (t >= 60) continue;
-    const c = RGB[Math.floor(t / 10)]; a[4 * i] = c[0]; a[4 * i + 1] = c[1]; a[4 * i + 2] = c[2]; a[4 * i + 3] = 175;
+    const t = sol.T ? tSnap(grid.SP[i], sol.T, sol.o) : Infinity; if (t >= TMAX) continue;
+    let k = 0; while (TH[k] < t) k++;
+    const c = RGBM[TH[k]]; a[4 * i] = c[0]; a[4 * i + 1] = c[1]; a[4 * i + 2] = c[2]; a[4 * i + 3] = 180;
   }
   sctx.putImageData(img, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.imageSmoothingEnabled = true;
   ctx.drawImage(small, 0, 0, cv.width, cv.height);
@@ -269,11 +389,11 @@ function paint() {
 }
 function report() {
   if (!sol) return;
-  const el = $('out'); el.innerHTML = '';
+  const el = $('out'); el.innerHTML = ''; el.className = '';
   if (!sol.o) { el.textContent = tr('nostreet'); return; }
   if (!isFinite(Math.min(...sol.w))) { el.textContent = tr('nost60'); return; }
   let ni = 0; sol.w.forEach((v, i) => { if (v < sol.w[ni]) ni = i; });
-  if (isFinite(sol.w[ni])) { const d1 = document.createElement('div'); d1.textContent = tr('near') + ': ' + S[ni].n + ' · ' + Math.round(sol.w[ni]) + ' ' + tr('walkmin'); el.appendChild(d1); }
+  const d1 = document.createElement('div'); d1.textContent = tr('near') + ': ' + S[ni].n + ' · ' + Math.round(sol.w[ni]) + ' ' + tr('walkmin'); el.appendChild(d1);
   if (P.only) return;
   const c30 = sol.E.filter(e => e <= 30).length, c60 = sol.E.filter(e => e <= 60).length, d2 = document.createElement('div'), b = document.createElement('span');
   b.className = 'big'; b.textContent = c30; d2.append(b, tr('stn') + ' · ' + c60 + ' ' + tr('stn60')); el.appendChild(d2);
@@ -283,42 +403,208 @@ function setFollow() { $('follow').setAttribute('aria-pressed', follow); $('foll
 
 map.on('moveend resize', refreshGrid);
 map.on('mousemove', e => {
-  if (!S.length || !WN) return;
+  if (tab !== 'reach' || !S.length || !WN) return;
   if (follow) { origin = e.latlng; later(); return; }
   if (!sol) return;
   const m = toM(e.latlng.lat, e.latlng.lng), t = timeAt(m[0], m[1], sol);
-  tip.textContent = t >= 60 ? tr('over') : Math.round(t) + ' ' + tr('min');
+  tip.textContent = t >= TMAX ? tr('over') : Math.round(t) + ' ' + tr('min');
   tip.style.left = e.containerPoint.x + 14 + 'px'; tip.style.top = e.containerPoint.y + 14 + 'px'; tip.style.display = 'block';
 });
 map.on('mouseout', () => { tip.style.display = 'none'; });
-map.on('click', e => { follow = false; setFollow(); origin = e.latlng; paint(); });
+map.on('click', e => { if (tab !== 'reach') return; follow = false; setFollow(); origin = e.latlng; paint(); });
 $('follow').addEventListener('click', () => { follow = !follow; setFollow(); });
-$('only').addEventListener('change', () => { P.only = $('only').checked; later(); });
+function setOnly(v) {
+  P.only = v; $('segM').setAttribute('aria-pressed', !v); $('segW').setAttribute('aria-pressed', v);
+  document.querySelectorAll('#sliders .metro').forEach(b => { b.hidden = v; });
+  texts(); showLegend(); later();
+}
+$('segM').addEventListener('click', () => setOnly(false));
+$('segW').addEventListener('click', () => setOnly(true));
 
-const SL = [['speed', 25, 60, 1, 'kmh'], ['wait', 0, 10, .5, 'min'], ['transfer', 0, 12, .5, 'min'], ['walk', 3, 6, .1, 'kmh']];
-SL.forEach(([k, lo, hi, st, u]) => {
+const SL = [['speed', 25, 60, 1, 'kmh', 1], ['wait', 0, 10, .5, 'min', 1], ['transfer', 0, 12, .5, 'min', 1], ['walk', 3, 6, .1, 'kmh', 0]];
+SL.forEach(([k, lo, hi, st, u, metro]) => {
   const box = document.createElement('div'), l = document.createElement('span'), v = document.createElement('span'), r = document.createElement('input');
-  box.className = 'sl'; l.dataset.k = k; r.type = 'range'; r.min = lo; r.max = hi; r.step = st; r.value = P[k]; v.dataset.u = u;
+  box.className = 'sl' + (metro ? ' metro' : ''); r.type = 'range'; r.min = lo; r.max = hi; r.step = st; r.value = P[k];
   const show = () => { v.textContent = (+r.value).toFixed(st < 1 ? 1 : 0) + ' ' + tr(u); };
   r.addEventListener('input', () => { P[k] = +r.value; show(); later(); });
   box.append(l, v, r); $('sliders').appendChild(box); box._show = show; box.id = 'sl_' + k;
 });
-const legend = $('legend'); legend.innerHTML = '<p id="lleg"></p>';
-BANDS.forEach((c, i) => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw" style="background:' + c + '"></span>' + (i * 10) + '–' + (i * 10 + 10); legend.appendChild(r); });
 
+/* ================= LEGEND (shared) ================= */
+const legend = $('legend');
+legend.innerHTML = '<p id="lleg"></p><div class="row head"><span class="sw" style="border:0;background:none"></span><span class="lab"></span><span class="bar" style="background:none"></span><span class="val" id="h_val"></span><span class="pop" id="h_pop"></span></div>';
+TH.forEach(m => {
+  const r = document.createElement('div'); r.className = 'row'; r.dataset.m = m;
+  r.innerHTML = '<span class="sw" style="background:' + MIN_COLORS[m] + '"></span><span class="lab"></span><span class="bar"><i></i></span><span class="val"></span><span class="pop"></span>';
+  legend.appendChild(r);
+});
+function showLegend() {
+  const R = tab === 'reach'; legend.classList.toggle('simple', R);
+  $('lleg').textContent = R ? (P.only ? tr('legW') : tr('legR')) : tr('legC');
+  $('h_val').textContent = COV.view === 'all' ? tr('hShare') : tr('hArea'); $('h_pop').textContent = tr('hPeople');
+  legend.querySelectorAll('.row[data-m]').forEach((r, i) => {
+    const m = +r.dataset.m;
+    r.querySelector('.lab').textContent = R ? (i ? TH[i - 1] : 0) + '–' + m + ' ' + tr('min') : m + ' ' + tr('min');
+    if (R) { r.title = ''; return; }
+    const f = COV.view === 'one' && (COV.by[COV.cur] || []).find(x => +x.properties.minutes === m);
+    const u = COV.view === 'all' && COV.on.has(m) ? COV.st.union[m] : null, sh = u != null && COV.st.city_pop ? 100 * u / COV.st.city_pop : null;
+    r.querySelector('.pop').textContent = f && f.properties.pop != null ? cmp(f.properties.pop) : (u != null ? cmp(u) : '');
+    r.querySelector('.val').textContent = f ? f.properties._a.toFixed(1) + ' km²' : (sh != null ? sh.toFixed(0) + '%' : '');
+    r.querySelector('.bar i').style.width = f ? Math.min(100, pctOf(f.properties._a, m)).toFixed(0) + '%' : (sh != null ? Math.min(100, sh).toFixed(0) + '%' : '0');
+    r.title = f ? pctOf(f.properties._a, m).toFixed(0) + '% ' + tr('disc') : '';
+  });
+}
+
+/* ================= COVERAGE (around stations) ================= */
+const COV = {p:null, iso:null, by:{}, props:{}, layer:null, cur:null, view:'', style:'near', on:new Set(TH), st:{union:{}, city_pop:null}};
+const lab = () => COV.st['label_' + lang] || 'Riyadh';
+const pctOf = (a, m) => 100 * a / (Math.PI * Math.pow(KMH * m / 60, 2));
+function area(g) { // km², from lon/lat
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates; let a = 0;
+  polys.forEach(p => p.forEach((ring, i) => {
+    const kx = 111.32 * Math.cos(ring[0][1] * Math.PI / 180), ky = 110.57; let s = 0;
+    for (let j = 0; j < ring.length - 1; j++) s += ring[j][0] * kx * ring[j + 1][1] * ky - ring[j + 1][0] * kx * ring[j][1] * ky;
+    a += (i === 0 ? 1 : -1) * Math.abs(s / 2);
+  }));
+  return a;
+}
+function loadCov() {
+  if (!COV.p) COV.p = Promise.all([getJSON('isochrones_pied.geojson'), getJSON('stations.geojson'), fetch('stats.json').then(r => r.ok ? r.json() : null).catch(() => null)])
+    .then(([iso, sts, stats]) => {
+      COV.iso = iso; if (stats && stats.union) COV.st = stats;
+      iso.features.forEach(f => { f.properties._a = area(f.geometry); (COV.by[f.properties.station] = COV.by[f.properties.station] || []).push(f); });
+      sts.features.forEach(f => { COV.props[f.properties.Name_ENG] = f.properties; });
+    });
+  return COV.p;
+}
+function clearCov() {
+  if (COV.layer) map.removeLayer(COV.layer); COV.layer = null;
+  if (COV.cur && markers[COV.cur]) markers[COV.cur].setStyle(base);
+}
+function buildSelect() {
+  const keep = COV.view === 'all' ? '__all' : (COV.cur || ''), sel = $('sel'); sel.innerHTML = '';
+  const add = (p, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; p.appendChild(o); return o; };
+  add(sel, '', tr('choose')); add(sel, '__all', tr('all'));
+  const names = S.map(s => s.n).sort(), used = new Set();
+  LINE_ORDER.forEach(c => {
+    const inLine = names.filter(n => linesOf(n).includes(c)); if (!inLine.length) return;
+    const g = document.createElement('optgroup'); g.label = '● ' + T[lang].lines[c]; g.style.color = LINE_COLORS[c];
+    inLine.forEach(n => { used.add(n); add(g, n, n).style.color = '#16222b'; }); sel.appendChild(g);
+  });
+  const rest = names.filter(n => !used.has(n));
+  if (rest.length) { const g = document.createElement('optgroup'); g.label = tr('other'); rest.forEach(n => add(g, n, n)); sel.appendChild(g); }
+  sel.value = keep;
+}
+function showInfoC() {
+  const el = $('info'); el.innerHTML = ''; el.className = '';
+  const add = (t, b) => { const d = document.createElement('div'); if (b) d.style.fontWeight = 600; d.textContent = t; el.appendChild(d); return d; };
+  if (COV.view === 'all') { add(COV.style === 'near' ? tr('allHintT') : tr('allHintO')); return; }
+  if (COV.view !== 'one') { add(tr('hintC')); return; }
+  add(COV.cur, true);
+  const d = document.createElement('div');
+  linesOf(COV.cur).forEach(c => { const s = document.createElement('span'); s.style.marginRight = '10px';
+    s.innerHTML = '<span class="dot" style="background:' + (LINE_COLORS[c] || '#666') + '"></span>'; s.append(T[lang].lines[c] || c); d.appendChild(s); });
+  el.appendChild(d);
+  const p = COV.props[COV.cur] || {};
+  if (p.Echange && !/^(no|non|0|false)$/i.test(String(p.Echange))) add(tr('ex'));
+  if (!(COV.by[COV.cur] || []).length) add(tr('none'));
+}
+const tipF = (f, l) => l.bindTooltip(() => f.properties.station + ' · ' + f.properties.minutes + ' ' + tr('min') + ' ' + tr('walkw') + '<br>' +
+  f.properties._a.toFixed(1) + ' km² · ' + pctOf(f.properties._a, f.properties.minutes).toFixed(0) + '% ' + tr('disc') + (f.properties.pop != null ? ' · ' + fmt(f.properties.pop) + ' ' + tr('ppl') : ''), {sticky:true});
+function select(name) {
+  clearCov(); COV.view = 'one'; COV.cur = name; $('sel').value = name; $('wtrow').hidden = true;
+  if (markers[name]) markers[name].setStyle({radius:9, fillColor:'#ffd400'});
+  const feats = (COV.by[name] || []).slice().sort((a, b) => b.properties.minutes - a.properties.minutes);
+  COV.layer = L.geoJSON(feats, {pane:'iso',
+    style: f => ({color: MIN_COLORS[f.properties.minutes], weight:1, opacity:.9, fillColor: MIN_COLORS[f.properties.minutes], fillOpacity:.6}),
+    onEachFeature: (f, l) => { tipF(f, l); l.on('mouseover', () => l.setStyle({weight:3, color:'#16222b'})); l.on('mouseout', () => COV.layer.resetStyle(l)); }}).addTo(map);
+  if (feats.length) map.fitBounds(COV.layer.getBounds(), {padding:[40, 40], maxZoom:14});
+  showInfoC(); showLegend(); showStat();
+}
+function showAll(fit = true) {
+  clearCov(); COV.view = 'all'; COV.cur = null; $('sel').value = '__all'; $('wtrow').hidden = false;
+  const every = COV.style === 'near', feats = COV.iso.features.filter(f => COV.on.has(+f.properties.minutes)).sort((a, b) => b.properties.minutes - a.properties.minutes);
+  COV.layer = L.geoJSON(feats, {pane:'iso', style: f => { const c = MIN_COLORS[f.properties.minutes]; return every ? {color:c, weight:0, fillColor:c, fillOpacity:.7} : {color:c, weight:.5, opacity:.6, fillColor:c, fillOpacity: COV.on.size > 1 ? .12 : .2}; },
+    onEachFeature: (f, l) => { tipF(f, l); l.on('mouseover', () => l.setStyle({weight:2.5, color:'#16222b', fillOpacity: every ? .7 : .45})); l.on('mouseout', () => COV.layer.resetStyle(l));
+      l.on('click', () => select(f.properties.station)); }}).addTo(map);
+  if (fit && feats.length) map.fitBounds(COV.layer.getBounds(), {padding:[40, 40]});
+  showInfoC(); showLegend(); showStat();
+}
+function resetC() { clearCov(); COV.view = ''; COV.cur = null; $('wtrow').hidden = true; showInfoC(); showLegend(); showStat(); }
+function showStat() {
+  const el = $('stat'); el.innerHTML = '';
+  if (!COV.iso) return;
+  const m0 = COV.on.size ? Math.max(...COV.on) : 0;
+  const add = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; el.appendChild(d); };
+  if (!m0) return;
+  const at = COV.iso.features.filter(f => +f.properties.minutes === m0 && f.properties.pop != null);
+  if (COV.view === 'all') {
+    const n = COV.st.union[m0]; if (n == null) return;
+    const p = COV.st.city_pop ? 100 * n / COV.st.city_pop : null, [big, lead] = tr('stAll')(p, n, m0);
+    add('big', big); add('lead', lead);
+    if (p != null) { const g = document.createElement('div'); g.className = 'gauge'; g.innerHTML = '<i style="width:' + Math.min(100, p) + '%"></i>'; el.appendChild(g); }
+    add('hd', tr('topT')(m0));
+    const ul = document.createElement('ul'); ul.className = 'rk';
+    at.slice().sort((a, b) => b.properties.pop - a.properties.pop).slice(0, 5).forEach(f => {
+      const li = document.createElement('li'), a = document.createElement('span'), b = document.createElement('span');
+      a.className = 'nm'; a.textContent = f.properties.station; b.className = 'tp'; b.textContent = cmp(f.properties.pop);
+      li.append(a, b); li.addEventListener('click', () => select(f.properties.station)); ul.appendChild(li);
+    });
+    el.appendChild(ul);
+  } else if (COV.view === 'one') {
+    const f = at.find(x => x.properties.station === COV.cur); if (!f) return;
+    const k = at.slice().sort((a, b) => b.properties.pop - a.properties.pop).indexOf(f) + 1, [big, lead] = tr('stOne')(f.properties.pop, m0, COV.cur);
+    add('big', big); add('lead', lead); add('hd', tr('rank')(k, at.length, m0));
+    if (COV.st.city_pop) add('hd', tr('share')(100 * f.properties.pop / COV.st.city_pop));
+  }
+}
+TH.forEach(m => {
+  const l = document.createElement('label'), c = document.createElement('input'), sw = document.createElement('span'), t = document.createElement('span');
+  c.type = 'checkbox'; c.value = m; c.checked = true; sw.className = 'sw'; sw.style.cssText = 'background:' + MIN_COLORS[m] + ';width:10px;height:10px';
+  t.className = 'tm'; t.dataset.m = m; l.append(c, sw, t); $('chips').appendChild(l);
+});
+$('sel').addEventListener('change', () => { const v = $('sel').value; v === '__all' ? showAll() : v ? select(v) : resetC(); });
+$('chips').addEventListener('change', e => { const m = +e.target.value; e.target.checked ? COV.on.add(m) : COV.on.delete(m); if (COV.view === 'all') showAll(false); });
+$('sty').addEventListener('change', () => { COV.style = $('sty').value; if (COV.view === 'all') showAll(false); });
+
+/* ================= TABS ================= */
+function setTab(t, keepUrl) {
+  tab = t;
+  $('tabR').setAttribute('aria-selected', t === 'reach'); $('tabC').setAttribute('aria-selected', t === 'cov');
+  $('pR').hidden = t !== 'reach'; $('pC').hidden = t !== 'cov';
+  if (!keepUrl) try { history.replaceState(null, '', t === 'cov' ? '#coverage' : location.pathname + location.search); } catch (e) {}
+  if (t === 'reach') {
+    clearCov(); cv.style.display = ''; if (om) om.addTo(map); refreshGrid();
+  } else {
+    cv.style.display = 'none'; tip.style.display = 'none'; if (om) map.removeLayer(om);
+    $('info').className = ''; $('info').textContent = tr('loadingC');
+    loadCov().then(() => { if (tab !== 'cov') return; buildSelect(); COV.view === 'one' && COV.cur ? select(COV.cur) : COV.view === '' && COV.cur === null && COV._opened ? resetC() : showAll(); COV._opened = true; })
+      .catch(e => { $('info').className = 'error'; $('info').textContent = tr('err') + (e.message || '') + tr('err2c'); });
+  }
+  texts(); showLegend();
+}
+$('tabR').addEventListener('click', () => setTab('reach'));
+$('tabC').addEventListener('click', () => setTab('cov'));
+
+/* ================= TEXTS / LANGUAGE ================= */
+function texts() {
+  $('sub').textContent = tab === 'cov' ? tr('subC') : (P.only ? tr('subW') : tr('subR'));
+  $('hint').textContent = P.only ? tr('hintW') : tr('hintM');
+  $('note').textContent = tab === 'cov' ? tr('noteC') : tr('noteR');
+}
 function applyLang() {
   document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
-  $('t1').textContent = tr('title'); $('sub').textContent = tr('sub'); $('lang').textContent = tr('toggle'); $('lonly').textContent = tr('only');
-  $('hint').textContent = tr('hint'); $('lset').textContent = tr('set'); $('note').textContent = tr('note'); $('lleg').textContent = tr('leg');
+  $('t1').textContent = tr('title'); $('lang').textContent = tr('toggle');
+  $('t_tabR').textContent = tr('tabR'); $('t_tabRs').textContent = tr('tabRs'); $('t_tabC').textContent = tr('tabC'); $('t_tabCs').textContent = tr('tabCs');
+  $('segM').textContent = tr('segM'); $('segW').textContent = tr('segW'); $('lset').textContent = tr('set'); $('t_how').textContent = tr('how');
+  $('t_wt').textContent = tr('wt'); [...$('sty').options].forEach(o => { o.textContent = o.value === 'near' ? tr('allT') : tr('allO'); });
+  document.querySelectorAll('#chips .tm').forEach(e => { e.textContent = e.dataset.m + ' ' + tr('min'); });
   SL.forEach(([k]) => { const b = $('sl_' + k); b.firstChild.textContent = tr(k); b._show(); });
-  chrome(); setFollow(); report();
-}
-function chrome() {
-  $('t_tabM').textContent = tr('tabM'); $('t_tabW').textContent = tr('tabW'); $('t_new').textContent = tr('new');
-  $('infob').title = tr('info'); $('infob').setAttribute('aria-label', tr('info'));
-  $('ab_c').innerHTML = tr('about');
-  const c = $('t_credit'); c.textContent = tr('credit'); const a = document.createElement('a'); a.href = '#'; a.textContent = tr('creditMore'); a.style.color = '#8a4a28';
+  $('infob').title = tr('info'); $('infob').setAttribute('aria-label', tr('info')); $('ab_c').innerHTML = tr('about');
+  const c = $('t_credit'); c.textContent = tr('credit'); const a = document.createElement('a'); a.href = '#'; a.textContent = tr('creditMore');
   a.addEventListener('click', e => { e.preventDefault(); openAbout(); }); c.appendChild(a);
+  texts(); setFollow(); report(); showLegend();
+  if (COV.iso) { buildSelect(); if (tab === 'cov') { showInfoC(); showStat(); } }
 }
 let lastFocus = null;
 function openAbout() { lastFocus = document.activeElement; $('about').hidden = false; $('closeb').focus(); }
@@ -330,22 +616,25 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('about'
 $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
 applyLang();
 
+/* ================= LOAD ================= */
 $('out').textContent = tr('loading');
-Promise.all(['network.json', 'lignes.geojson', 'walk_graph.json'].map(u => fetch(u).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); })))
+Promise.all(['network.json', 'lignes.geojson', 'walk_graph.json'].map(getJSON))
 .then(([net, lines, wg]) => {
   setup(net); buildWalk(wg);
   S.forEach(s => { s.sp = snap(s.m[0], s.m[1], 1000); });
   L.geoJSON(lines, {pane:'lines', style:{color:'#fff', weight:7, opacity:.9}}).addTo(map);
   L.geoJSON(lines, {pane:'lines', style: f => ({color: LINE_COLORS[String(f.properties.lines || '').split('|')[0].trim()] || '#666', weight:4, opacity:.95})}).addTo(map);
   S.forEach(s => {
-    const m = L.circleMarker([s.y, s.x], {pane:'stations', radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1}).addTo(map);
-    m.bindTooltip(s.n);
-    m.on('click', ev => { L.DomEvent.stop(ev); follow = false; setFollow(); origin = L.latLng(s.y, s.x); paint(); });
+    const m = L.circleMarker([s.y, s.x], Object.assign({pane:'stations'}, base)).addTo(map); markers[s.n] = m;
+    m.bindTooltip(() => s.n + ' · ' + s.lines.map(c => T[lang].lines[c] || c).join(', '));
+    m.on('click', ev => { L.DomEvent.stop(ev);
+      if (tab === 'reach') { follow = false; setFollow(); origin = L.latLng(s.y, s.x); paint(); }
+      else if (COV.iso) select(s.n); });
   });
   origin = L.latLng(LAT0, LNG0);
-  om = L.circleMarker(origin, {pane:'stations', radius:8, color:'#16222b', weight:2, fillColor:'#ffd400', fillOpacity:1, interactive:false}).addTo(map);
+  om = L.circleMarker(origin, {pane:'stations', radius:8, color:'#16222b', weight:2, fillColor:'#ffd400', fillOpacity:1, interactive:false});
   map.fitBounds(L.latLngBounds(S.map(s => [s.y, s.x])), {padding:[40, 40]});
-  refreshGrid();
+  if (location.hash === '#coverage') setTab('cov', true); else { om.addTo(map); refreshGrid(); }
 })
 .catch(e => { $('out').className = 'error'; $('out').textContent = tr('err') + (e.message || '') + tr('err2'); });
 </script>
