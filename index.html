@@ -255,10 +255,10 @@ const T = {
   bExLeg:['Mapped, in the walking network', 'Mapped, not connected to any street'],
   bBack:'All sites', bExL:'Show footbridges and underpasses already mapped',
   bExT:s => s === 'unlinkable' ? 'Mapped in OpenStreetMap, not connected to any street (ignored)' : 'Mapped in OpenStreetMap, in the walking network',
-  bLeg:'Green streets: where people would reach a station faster with the footbridge (within 15 min). Darker = more minutes saved.', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
+  bLeg:'Green areas, along the streets: where people would reach a station faster with the footbridge (within 15 min). Darker = more minutes saved.', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
   rcN:{motorway:'Expressway', trunk:'Expressway', motorway_link:'Expressway ramp', trunk_link:'Expressway ramp', primary:'Major avenue'},
   rc:{motorway:'an expressway', trunk:'an expressway', motorway_link:'an expressway ramp', trunk_link:'an expressway ramp', primary:'a major avenue'},
-  noteB:'Each numbered line is a proposed footbridge; the green streets are where people would reach a station faster, darker for bigger gains. People are counted from the WorldPop 100 m grid. Sites are ranked by the walking time saved by people who end up within 15 min of a station (saving at least 2 min), at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
+  noteB:'Each numbered line is a proposed footbridge; the green areas, drawn along the streets, are where people would reach a station faster, darker for bigger gains. People are counted from the WorldPop 100 m grid. Sites are ranked by the walking time saved by people who end up within 15 min of a station (saving at least 2 min), at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
  fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
   tabR:'Temps de trajet', tabRs:'depuis un point', tabC:'Habitants desservis', tabCs:'à pied des stations',
   subR:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
@@ -307,10 +307,10 @@ const T = {
   bExLeg:['Cartographié, dans le réseau piéton', 'Cartographié, relié à aucune rue'],
   bBack:'Tous les sites', bExL:'Afficher les passerelles et souterrains déjà cartographiés',
   bExT:s => s === 'unlinkable' ? "Cartographié dans OpenStreetMap, relié à aucune rue (ignoré)" : 'Cartographié dans OpenStreetMap, dans le réseau piéton',
-  bLeg:"Rues en vert : où les habitants rejoindraient une station plus vite grâce à la passerelle (en moins de 15 min). Plus c'est foncé, plus ils gagnent de minutes.", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
+  bLeg:"Zones vertes, le long des rues : où les habitants rejoindraient une station plus vite grâce à la passerelle (en moins de 15 min). Plus c'est foncé, plus ils gagnent de minutes.", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
   rcN:{motorway:'Voie rapide', trunk:'Voie rapide', motorway_link:'Bretelle de voie rapide', trunk_link:'Bretelle de voie rapide', primary:'Grande avenue'},
   rc:{motorway:"d'une voie rapide", trunk:"d'une voie rapide", motorway_link:"d'une bretelle de voie rapide", trunk_link:"d'une bretelle de voie rapide", primary:"d'une grande avenue"},
-  noteB:"Chaque trait numéroté est une passerelle proposée ; les rues en vert montrent où les habitants rejoindraient une station plus vite, plus foncé pour les plus gros gains. Les habitants sont comptés avec la grille WorldPop de 100 m. Les sites sont classés selon le temps de marche gagné par les habitants qui arrivent à moins de 15 min d'une station (au moins 2 min gagnées), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
+  noteB:"Chaque trait numéroté est une passerelle proposée ; les zones vertes, tracées le long des rues, montrent où les habitants rejoindraient une station plus vite, plus foncé pour les plus gros gains. Les habitants sont comptés avec la grille WorldPop de 100 m. Les sites sont classés selon le temps de marche gagné par les habitants qui arrivent à moins de 15 min d'une station (au moins 2 min gagnées), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
 };
 let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
@@ -461,7 +461,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '23';   // bump after each data update so browsers reload the files
+const V = '24';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -707,9 +707,8 @@ function drawBrg(fit) {
   clearBrg();
   const g = L.layerGroup(), cur = BRG.cur;
   const zf = BRG.zones.features.filter(f => cur == null || f.properties.rank === cur);
-  L.geoJSON(zf, {pane:'iso', interactive:false, style: {color:'#fff', weight: cur == null ? 4 : 7, opacity:.9}}).addTo(g);
   L.geoJSON(zf, {pane:'iso',
-    style: f => ({color:GAIN_C[f.properties.gain_lo], weight: cur == null ? 2.5 : 4.5, opacity:1, lineCap:'round'}),
+    style: f => ({color:GAIN_C[f.properties.gain_lo], weight:.6, opacity:.9, fillColor:GAIN_C[f.properties.gain_lo], fillOpacity:.62}),
     onEachFeature: (f, l) => l.bindTooltip(() => '#' + f.properties.rank + ' · ' + tr('bZone')(f.properties.gain_min, f.properties.people), {sticky:true})}).addTo(g);
   BRG.br.features.forEach(f => {
     const p = f.properties, on = cur == null || cur === p.rank, ll = f.geometry.coordinates.map(c => [c[1], c[0]]);
@@ -768,7 +767,7 @@ function showBrg() {
   const lg = $('bleg'); lg.innerHTML = ''; const lp = document.createElement('p'); lp.textContent = tr('bLeg'); lg.appendChild(lp);
   [[2, '2–4'], [5, '5–9'], [10, '10–19'], [20, '20+']].forEach(([k, t]) => {
     const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw"></span><span></span>';
-    r.children[0].style.cssText = 'height:5px;border:0;border-radius:3px;background:' + GAIN_C[k]; r.children[1].textContent = t + ' ' + tr('min'); lg.appendChild(r);
+    r.children[0].style.background = GAIN_C[k]; r.children[1].textContent = t + ' ' + tr('min'); lg.appendChild(r);
   });
   if ($('bex').checked) tr('bExLeg').forEach((t, i) => {
     const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span style="width:22px;display:flex;justify-content:center;flex:none"><i class="exb' + (i ? ' off' : '') + '" style="display:block;width:11px;height:11px"></i></span><span></span>';
