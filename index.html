@@ -44,6 +44,7 @@ details{border-top:1px solid var(--rule);padding-top:8px;margin-top:10px;font-si
 summary{cursor:pointer;color:var(--muted)}
 .sl{display:grid;grid-template-columns:1fr auto;gap:0 8px;margin-top:8px}
 .sl input{grid-column:1/3;width:100%;accent-color:var(--acc)}
+.sl[hidden]{display:none}
 select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink)}
 #wtrow{margin-top:8px;font-size:13px;color:var(--muted)}
 #chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px}
@@ -81,6 +82,13 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 .error{color:#9b1c1c}
 #tip{position:absolute;z-index:900;pointer-events:none;background:var(--ink);color:#fff;font-size:12px;padding:2px 7px;border-radius:3px;display:none;white-space:nowrap}
 .leaflet-tooltip{font-family:inherit}
+.basectl{display:flex;flex-direction:column;background:#fff;border-radius:4px;box-shadow:0 1px 5px rgba(0,0,0,.35);overflow:hidden}
+.basectl button{border:0;background:#fff;color:var(--ink);font-size:12px;padding:5px 9px;text-align:left}
+.basectl button+button{border-top:1px solid var(--rule)}
+.basectl button[aria-pressed="true"]{background:var(--acc);color:#fff}
+#summer{width:100%;margin:0 0 12px;padding:7px 8px;border:1px solid #d9a400;border-radius:6px;background:#fff;color:#7a5a00;text-align:left}
+#summer[aria-pressed="true"]{background:#f5c400;border-color:#f5c400;color:#16222b;font-weight:600}
+#summer small{display:block;font-size:11px;font-weight:400;color:inherit;opacity:.85}
 #about{position:fixed;inset:0;z-index:2000;background:rgba(22,34,43,.45);display:flex;align-items:center;justify-content:center;padding:16px}
 #about[hidden]{display:none}
 #about .box{background:var(--paper);border-radius:8px;max-width:560px;width:100%;max-height:calc(100% - 32px);overflow:auto;padding:20px 22px;font-size:14px;line-height:1.5;box-shadow:0 10px 40px rgba(22,34,43,.35);position:relative}
@@ -102,6 +110,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
     <button id="tabR" type="button" role="tab" aria-selected="true">🚇 <b id="t_tabR"></b><small id="t_tabRs"></small></button>
     <button id="tabC" type="button" role="tab" aria-selected="false">📍 <b id="t_tabC"></b><small id="t_tabCs"></small></button>
   </div>
+  <button id="summer" type="button" aria-pressed="false"><span id="t_summer"></span><small id="t_summerS"></small></button>
   <section id="pR">
     <div class="seg" role="group"><button id="segM" type="button" aria-pressed="true"></button><button id="segW" type="button" aria-pressed="false"></button></div>
     <button id="follow" type="button" aria-pressed="true"></button>
@@ -189,6 +198,7 @@ const T = {
   rank:(k, N, m) => 'Rank #' + k + ' of ' + N + ' stations for people within ' + m + ' min',
   share:p => p.toFixed(1) + '% of the population of ' + lab(),
   topT:m => 'Top 5 stations: people within ' + m + ' min',
+  summer:'☀️ Summer mode', summerS:n => 'At 45 °C, nobody walks far: each walk is capped at ' + n + ' min', summerOn:n => '☀️ Summer mode: at most ' + n + ' min on foot to and from the metro.', cap:'Longest walk in summer', b_plan:'Map', b_sat:'Satellite', b_osm:'OpenStreetMap',
   lines:{Blue:'Blue Line', Red:'Red Line', Orange:'Orange Line', Yellow:'Yellow Line', Green:'Green Line', Purple:'Purple Line'}},
  fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
   tabR:'Portée', tabRs:'depuis un point', tabC:'Couverture', tabCs:'autour des stations',
@@ -217,12 +227,13 @@ const T = {
   rank:(k, N, m) => 'Rang n°' + k + ' sur ' + N + ' stations pour les habitants à moins de ' + m + ' min',
   share:p => p.toFixed(1).replace('.', ',') + ' % de la population de ' + lab(),
   topT:m => 'Top 5 des stations : habitants à moins de ' + m + ' min',
+  summer:'☀️ Mode été', summerS:n => 'À 45 °C, personne ne marche longtemps : chaque trajet à pied est limité à ' + n + ' min', summerOn:n => '☀️ Mode été : au plus ' + n + ' min à pied pour aller au métro et en repartir.', cap:'Marche maximale en été', b_plan:'Plan', b_sat:'Satellite', b_osm:'OpenStreetMap',
   lines:{Blue:'Ligne bleue', Red:'Ligne rouge', Orange:'Ligne orange', Yellow:'Ligne jaune', Green:'Ligne verte', Purple:'Ligne violette'}}
 };
 let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
 const $ = id => document.getElementById(id);
-const P = {speed:40, wait:3, transfer:5, walk:4.8, only:false};
+const P = {speed:40, wait:3, transfer:5, walk:4.8, only:false, summer:false, cap:10};
 const CELL = 8;
 /* CORE */
 let S = [], NODE = [], ADJ = [], KX = 1, KY = 110574, LAT0 = 24.7, LNG0 = 46.7;
@@ -291,19 +302,21 @@ function snap(x, y, maxR) {
   return be < 0 ? null : {e: be, f: bf, d: bd};
 }
 // Dijkstra on the pedestrian graph (minutes); src = [[node, time], ...]
-function walkDijkstra(src, D, tmax) {
-  const w = WN, W = wm(), HK = w.HK, HN = w.HN; D.fill(Infinity); let n = 0;
-  const push = (v, k) => { let i = n++; while (i > 0) { const p = (i - 1) >> 1; if (HK[p] <= k) break; HK[i] = HK[p]; HN[i] = HN[p]; i = p; } HK[i] = k; HN[i] = v; };
-  for (const [v, t] of src) if (t < D[v] && t < tmax) { D[v] = t; push(v, t); }
+// Dijkstra on the pedestrian graph (minutes); src = [[node, time, start], ...]
+// cap = longest walk allowed from the source (summer mode); the start time travels with each path
+function walkDijkstra(src, D, tmax, cap = Infinity) {
+  const w = WN, W = wm(), HK = w.HK, HN = w.HN, HS = w.HS || (w.HS = new Float32Array(HK.length)), S0 = w.S0 || (w.S0 = new Float32Array(w.N)); D.fill(Infinity); let n = 0;
+  const push = (v, k, s0) => { let i = n++; while (i > 0) { const p = (i - 1) >> 1; if (HK[p] <= k) break; HK[i] = HK[p]; HN[i] = HN[p]; HS[i] = HS[p]; i = p; } HK[i] = k; HN[i] = v; HS[i] = s0; };
+  for (const [v, t, s0] of src) if (t < D[v] && t < tmax && t - s0 <= cap) { D[v] = t; S0[v] = s0; push(v, t, s0); }
   while (n) {
-    const k = HK[0], v = HN[0]; n--;
-    if (n) { const lk = HK[n], lv = HN[n]; let i = 0;
-      while (true) { let c = 2 * i + 1; if (c >= n) break; if (c + 1 < n && HK[c + 1] < HK[c]) c++; if (HK[c] >= lk) break; HK[i] = HK[c]; HN[i] = HN[c]; i = c; }
-      HK[i] = lk; HN[i] = lv; }
+    const k = HK[0], v = HN[0], s0 = HS[0]; n--;
+    if (n) { const lk = HK[n], lv = HN[n], ls = HS[n]; let i = 0;
+      while (true) { let c = 2 * i + 1; if (c >= n) break; if (c + 1 < n && HK[c + 1] < HK[c]) c++; if (HK[c] >= lk) break; HK[i] = HK[c]; HN[i] = HN[c]; HS[i] = HS[c]; i = c; }
+      HK[i] = lk; HN[i] = lv; HS[i] = ls; }
     if (k > D[v]) continue;
     for (let j = w.OFF[v]; j < w.OFF[v + 1]; j++) {
       const q = w.AN[j], t = k + w.EL[w.AE[j]] / W;
-      if (t < D[q] && t < tmax) { D[q] = t; push(q, t); }
+      if (t < D[q] && t < tmax && t - s0 <= cap) { D[q] = t; S0[q] = s0; push(q, t, s0); }
     }
   }
   return D;
@@ -316,12 +329,13 @@ function tSnap(sp, D, o) {
   if (o && o.e === sp.e) t = Math.min(t, (o.d + Math.abs(sp.f - o.f) * L) / W);
   return t + sp.d / W;
 }
-const srcOf = (sp, t0) => { const w = WN, W = wm(), L = w.EL[sp.e]; return [[w.EA[sp.e], t0 + (sp.d + sp.f * L) / W], [w.EB[sp.e], t0 + (sp.d + (1 - sp.f) * L) / W]]; };
+const srcOf = (sp, t0) => { const w = WN, W = wm(), L = w.EL[sp.e]; return [[w.EA[sp.e], t0 + (sp.d + sp.f * L) / W, t0], [w.EB[sp.e], t0 + (sp.d + (1 - sp.f) * L) / W, t0]]; };
 function solve(ox, oy) {
   const n = NODE.length, o = snap(ox, oy, SNAP_PT);
   if (!o) return {ox, oy, o:null, w:S.map(() => Infinity), E:S.map(() => Infinity), T:null};
-  const DA = walkDijkstra(srcOf(o, 0), WN.DA, 60);
-  const w = S.map(s => tSnap(s.sp, DA, o));
+  const cap = P.summer ? P.cap : Infinity;
+  const DA = walkDijkstra(srcOf(o, 0), WN.DA, 60, cap);
+  const w = S.map(s => { const t = tSnap(s.sp, DA, o); return t <= cap ? t : Infinity; });
   if (P.only) return {ox, oy, o, w, E:S.map(() => Infinity), T:DA};
   const d = new Float64Array(n).fill(Infinity), done = new Uint8Array(n);
   for (let k = 0; k < n; k++) d[k] = w[NODE[k]] + P.wait;
@@ -335,7 +349,7 @@ function solve(ox, oy) {
   const E = S.map(s => s.nodes.length ? Math.min(...s.nodes.map(k => d[k])) : Infinity);
   // keep walking from the origin and from every station at its arrival time
   const src = srcOf(o, 0); S.forEach((s, i) => { if (s.sp && E[i] < 60) src.push(...srcOf(s.sp, E[i])); });
-  const T = walkDijkstra(src, WN.DB, 60);
+  const T = walkDijkstra(src, WN.DB, 60, cap);
   return {ox, oy, o, w, E, T};
 }
 function timeAt(x, y, sol) { return sol && sol.T ? tSnap(snap(x, y, SNAP_GRID), sol.T, sol.o) : Infinity; }
@@ -345,9 +359,23 @@ function timeAt(x, y, sol) { return sol && sol.T ? tSnap(snap(x, y, SNAP_GRID), 
 const map = L.map('map', {zoomControl:false, zoomAnimation:false}).setView([24.71, 46.69], 11);
 L.control.zoom({position:'topright'}).addTo(map);
 [['iso',350],['time',360],['labels',400],['lines',450],['stations',650]].forEach(([n, z]) => { map.createPane(n).style.zIndex = z; });
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:16, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors'}).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {maxZoom:16, pane:'labels'}).addTo(map);
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
+const BASES = {
+  plan: L.layerGroup([
+    L.tileLayer(ESRI + 'Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {maxNativeZoom:16, maxZoom:18, attribution:'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OpenStreetMap contributors'}),
+    L.tileLayer(ESRI + 'Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {maxNativeZoom:16, maxZoom:18, pane:'labels'})]),
+  sat: L.layerGroup([
+    L.tileLayer(ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxNativeZoom:18, maxZoom:18, attribution:'Imagery &copy; Esri, Maxar, Earthstar Geographics'}),
+    L.tileLayer(ESRI + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxNativeZoom:18, maxZoom:18, pane:'labels'})]),
+  osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:18, attribution:'&copy; OpenStreetMap contributors'})
+};
+let base0 = 'plan'; BASES.plan.addTo(map);
+const BaseCtl = L.Control.extend({options:{position:'topright'}, onAdd() {
+  const d = L.DomUtil.create('div', 'basectl'); L.DomEvent.disableClickPropagation(d);
+  ['plan', 'sat', 'osm'].forEach(k => { const b = L.DomUtil.create('button', '', d); b.type = 'button'; b.dataset.b = k; b.setAttribute('aria-pressed', k === base0);
+    b.addEventListener('click', () => { map.removeLayer(BASES[base0]); base0 = k; BASES[k].addTo(map); d.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.b === k)); document.body.classList.toggle('onsat', k === 'sat'); }); });
+  return d; }});
+new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
@@ -394,6 +422,7 @@ function report() {
   if (!isFinite(Math.min(...sol.w))) { el.textContent = tr('nost60'); return; }
   let ni = 0; sol.w.forEach((v, i) => { if (v < sol.w[ni]) ni = i; });
   const d1 = document.createElement('div'); d1.textContent = tr('near') + ': ' + S[ni].n + ' · ' + Math.round(sol.w[ni]) + ' ' + tr('walkmin'); el.appendChild(d1);
+  if (P.summer) { const d = document.createElement('div'); d.className = 'hint'; d.textContent = tr('summerOn')(P.cap); el.appendChild(d); }
   if (P.only) return;
   const c30 = sol.E.filter(e => e <= 30).length, c60 = sol.E.filter(e => e <= 60).length, d2 = document.createElement('div'), b = document.createElement('span');
   b.className = 'big'; b.textContent = c30; d2.append(b, tr('stn') + ' · ' + c60 + ' ' + tr('stn60')); el.appendChild(d2);
@@ -421,12 +450,12 @@ function setOnly(v) {
 $('segM').addEventListener('click', () => setOnly(false));
 $('segW').addEventListener('click', () => setOnly(true));
 
-const SL = [['speed', 25, 60, 1, 'kmh', 1], ['wait', 0, 10, .5, 'min', 1], ['transfer', 0, 12, .5, 'min', 1], ['walk', 3, 6, .1, 'kmh', 0]];
+const SL = [['speed', 25, 60, 1, 'kmh', 1], ['wait', 0, 10, .5, 'min', 1], ['transfer', 0, 12, .5, 'min', 1], ['walk', 3, 6, .1, 'kmh', 0], ['cap', 5, 20, 5, 'min', 0]];
 SL.forEach(([k, lo, hi, st, u, metro]) => {
   const box = document.createElement('div'), l = document.createElement('span'), v = document.createElement('span'), r = document.createElement('input');
   box.className = 'sl' + (metro ? ' metro' : ''); r.type = 'range'; r.min = lo; r.max = hi; r.step = st; r.value = P[k];
   const show = () => { v.textContent = (+r.value).toFixed(st < 1 ? 1 : 0) + ' ' + tr(u); };
-  r.addEventListener('input', () => { P[k] = +r.value; show(); later(); });
+  r.addEventListener('input', () => { P[k] = +r.value; show(); if (k === 'cap') applySummer(); else later(); });
   box.append(l, v, r); $('sliders').appendChild(box); box._show = show; box.id = 'sl_' + k;
 });
 
@@ -445,7 +474,7 @@ function showLegend() {
   legend.querySelectorAll('.row[data-m]').forEach((r, i) => {
     const m = +r.dataset.m;
     r.querySelector('.lab').textContent = R ? (i ? TH[i - 1] : 0) + '–' + m + ' ' + tr('min') : m + ' ' + tr('min');
-    if (R) { r.title = ''; return; }
+    if (R) { r.title = ''; r.style.opacity = 1; return; }
     const f = COV.view === 'one' && (COV.by[COV.cur] || []).find(x => +x.properties.minutes === m);
     const u = COV.view === 'all' && COV.on.has(m) ? COV.st.union[m] : null, sh = u != null && COV.st.city_pop ? 100 * u / COV.st.city_pop : null;
     r.querySelector('.pop').textContent = f && f.properties.pop != null ? cmp(f.properties.pop) : (u != null ? cmp(u) : '');
@@ -453,6 +482,7 @@ function showLegend() {
     r.querySelector('.bar i').style.width = f ? Math.min(100, pctOf(f.properties._a, m)).toFixed(0) + '%' : (sh != null ? Math.min(100, sh).toFixed(0) + '%' : '0');
     r.title = f ? pctOf(f.properties._a, m).toFixed(0) + '% ' + tr('disc') : '';
   });
+  legend.querySelectorAll('.row[data-m]').forEach(r => { r.style.opacity = P.summer && +r.dataset.m > P.cap ? .35 : 1; });
 }
 
 /* ================= COVERAGE (around stations) ================= */
@@ -511,14 +541,14 @@ function showInfoC() {
 }
 const tipF = (f, l) => l.bindTooltip(() => f.properties.station + ' · ' + f.properties.minutes + ' ' + tr('min') + ' ' + tr('walkw') + '<br>' +
   f.properties._a.toFixed(1) + ' km² · ' + pctOf(f.properties._a, f.properties.minutes).toFixed(0) + '% ' + tr('disc') + (f.properties.pop != null ? ' · ' + fmt(f.properties.pop) + ' ' + tr('ppl') : ''), {sticky:true});
-function select(name) {
+function select(name, keepView) {
   clearCov(); COV.view = 'one'; COV.cur = name; $('sel').value = name; $('wtrow').hidden = true;
   if (markers[name]) markers[name].setStyle({radius:9, fillColor:'#ffd400'});
-  const feats = (COV.by[name] || []).slice().sort((a, b) => b.properties.minutes - a.properties.minutes);
+  const feats = (COV.by[name] || []).filter(f => !P.summer || +f.properties.minutes <= P.cap).sort((a, b) => b.properties.minutes - a.properties.minutes);
   COV.layer = L.geoJSON(feats, {pane:'iso',
     style: f => ({color: MIN_COLORS[f.properties.minutes], weight:1, opacity:.9, fillColor: MIN_COLORS[f.properties.minutes], fillOpacity:.6}),
     onEachFeature: (f, l) => { tipF(f, l); l.on('mouseover', () => l.setStyle({weight:3, color:'#16222b'})); l.on('mouseout', () => COV.layer.resetStyle(l)); }}).addTo(map);
-  if (feats.length) map.fitBounds(COV.layer.getBounds(), {padding:[40, 40], maxZoom:14});
+  if (feats.length && !keepView) map.fitBounds(COV.layer.getBounds(), {padding:[40, 40], maxZoom:14});
   showInfoC(); showLegend(); showStat();
 }
 function showAll(fit = true) {
@@ -567,6 +597,19 @@ $('sel').addEventListener('change', () => { const v = $('sel').value; v === '__a
 $('chips').addEventListener('change', e => { const m = +e.target.value; e.target.checked ? COV.on.add(m) : COV.on.delete(m); if (COV.view === 'all') showAll(false); });
 $('sty').addEventListener('change', () => { COV.style = $('sty').value; if (COV.view === 'all') showAll(false); });
 
+/* ================= SUMMER MODE ================= */
+function applySummer() {
+  $('summer').setAttribute('aria-pressed', P.summer);
+  $('sl_cap').hidden = !P.summer;
+  // coverage: keep only the walking times allowed in summer
+  COV.on = new Set(P.summer ? TH.filter(m => m <= P.cap) : TH);
+  document.querySelectorAll('#chips input').forEach(c => { c.checked = COV.on.has(+c.value); c.disabled = P.summer && +c.value > P.cap; });
+  texts();
+  if (tab === 'reach') later();
+  else if (COV.iso) { COV.view === 'all' ? showAll(false) : COV.view === 'one' ? select(COV.cur, true) : (showLegend(), showStat()); }
+}
+$('summer').addEventListener('click', () => { P.summer = !P.summer; applySummer(); });
+
 /* ================= TABS ================= */
 function setTab(t, keepUrl) {
   tab = t;
@@ -591,6 +634,7 @@ function texts() {
   $('sub').textContent = tab === 'cov' ? tr('subC') : (P.only ? tr('subW') : tr('subR'));
   $('hint').textContent = P.only ? tr('hintW') : tr('hintM');
   $('note').textContent = tab === 'cov' ? tr('noteC') : tr('noteR');
+  $('t_summer').textContent = tr('summer'); $('t_summerS').textContent = tr('summerS')(P.cap);
 }
 function applyLang() {
   document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
@@ -600,6 +644,7 @@ function applyLang() {
   $('t_wt').textContent = tr('wt'); [...$('sty').options].forEach(o => { o.textContent = o.value === 'near' ? tr('allT') : tr('allO'); });
   document.querySelectorAll('#chips .tm').forEach(e => { e.textContent = e.dataset.m + ' ' + tr('min'); });
   SL.forEach(([k]) => { const b = $('sl_' + k); b.firstChild.textContent = tr(k); b._show(); });
+  document.querySelectorAll('.basectl button').forEach(b => { b.textContent = tr('b_' + b.dataset.b); });
   $('infob').title = tr('info'); $('infob').setAttribute('aria-label', tr('info')); $('ab_c').innerHTML = tr('about');
   const c = $('t_credit'); c.textContent = tr('credit'); const a = document.createElement('a'); a.href = '#'; a.textContent = tr('creditMore');
   a.addEventListener('click', e => { e.preventDefault(); openAbout(); }); c.appendChild(a);
@@ -614,7 +659,7 @@ $('closeb').addEventListener('click', closeAbout);
 $('about').addEventListener('click', e => { if (e.target === $('about')) closeAbout(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('about').hidden) closeAbout(); });
 $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
-applyLang();
+applyLang(); $('sl_cap').hidden = true;
 
 /* ================= LOAD ================= */
 $('out').textContent = tr('loading');
