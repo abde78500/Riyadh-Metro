@@ -282,6 +282,16 @@ Promise.all([...[fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetc
     if (list.length) add(tr('fh1') + ' ' + list[0][1] + ' ' + tr('fh2') + ' ' + list[0][0], true); else add(tr('far'), true);
     add(tr('near') + ' ' + nn + ', ' + (nd < 1000 ? Math.round(nd) + ' m' : (nd / 1000).toFixed(1) + ' km'));
     if (list.length > 1) add(tr('also') + ' ' + list.slice(1, 5).map(x => x[0] + ' (' + x[1] + ')').join(', ') + (list.length > 5 ? '…' : ''));
+    // population atteinte depuis la station trouvée, au seuil de temps du point survolé
+    const st = $('stat'); st.innerHTML = '';
+    if (!list.length) return;
+    const [sn, sm] = list[0], f = (byStation[sn] || []).find(x => +x.properties.minutes === +sm);
+    if (!f || f.properties.pop == null) return;
+    const put = (cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; st.appendChild(d); };
+    const [big, lead] = tr('stOne')(f.properties.pop, sm, sn); put('big', big); put('lead', lead);
+    const at = iso.features.filter(x => +x.properties.minutes === +sm && x.properties.pop != null).sort((a, b) => b.properties.pop - a.properties.pop);
+    put('hd', tr('rank')(at.indexOf(f) + 1, at.length, sm));
+    if (ST.city_pop) put('hd', tr('share')(100 * f.properties.pop / ST.city_pop));
   }
 
   function applyLang() {
@@ -298,7 +308,7 @@ Promise.all([...[fetch('isochrones_pied.geojson'), fetch('lignes.geojson'), fetc
   $('sty').addEventListener('change', () => { styleMode = $('sty').value; if (mode === 'all') showAll(false); });
   $('lang').addEventListener('click', () => { lang = lang === 'en' ? 'fr' : 'en'; applyLang(); });
   $('follow').addEventListener('click', () => { follow = !follow; $('follow').setAttribute('aria-pressed', follow);
-    if (follow) $('info').textContent = tr('followHint'); else { if (hl && hl !== cur) markers[hl].setStyle(base); hl = null; if (ln) { map.removeLayer(ln); ln = null; } showInfo(); } });
+    if (follow) { $('info').textContent = tr('followHint'); $('stat').innerHTML = ''; } else { if (hl && hl !== cur) markers[hl].setStyle(base); hl = null; if (ln) { map.removeLayer(ln); ln = null; } showInfo(); showStat(); } });
   map.on('mousemove', e => { if (!follow || raf) return; raf = requestAnimationFrame(() => { raf = 0; live(e.latlng); }); });
   map.on('click', e => { if (follow) live(e.latlng); });
   applyLang();
