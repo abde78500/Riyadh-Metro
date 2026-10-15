@@ -22,46 +22,6 @@
   },
   {
    "rank": 2,
-   "name_en": "King Salman Road",
-   "name_fr": "route du Roi-Salmane",
-   "road_ar": "طريق الملك سلمان",
-   "road_class": "trunk",
-   "near_station": "SAB Bank",
-   "near_station_m": 187,
-   "span_m": 141,
-   "detour_m": 4311,
-   "people": 3463,
-   "newly_10min": 1004,
-   "gain_avg_min": 13.1,
-   "gain_max_min": 20.8,
-   "from_beyond_30min": 395,
-   "kind": "raccourci",
-   "existing_crossing_m": 225,
-   "lat": 24.82856,
-   "lon": 46.61791
-  },
-  {
-   "rank": 3,
-   "name_en": "Prince Saad bin Abdulrahman Al Awwal Road",
-   "name_fr": "avenue Prince-Saad-ben-Abdulrahman-Al-Awwal",
-   "road_ar": "طريق الأمير سعد ابن عبدالرحمن الأول",
-   "road_class": "primary",
-   "near_station": "An Naseem",
-   "near_station_m": 283,
-   "span_m": 40,
-   "detour_m": 3404,
-   "people": 3002,
-   "newly_10min": 786,
-   "gain_avg_min": 23.9,
-   "gain_max_min": 30.0,
-   "from_beyond_30min": 2909,
-   "kind": "reconnexion",
-   "existing_crossing_m": 2881,
-   "lat": 24.69935,
-   "lon": 46.82503
-  },
-  {
-   "rank": 4,
    "name_en": "Khurais Road (service road)",
    "name_fr": "route de Khurais (contre-allée)",
    "road_ar": "طريق خريص الفرعي",
@@ -81,7 +41,7 @@
    "lon": 46.80048
   },
   {
-   "rank": 5,
+   "rank": 3,
    "name_en": "Khadija bint Khuwaylid Street",
    "name_fr": "rue Khadija-bint-Khuwaylid",
    "road_ar": "خديجة بنت خويلد",
@@ -101,7 +61,29 @@
    "lon": 46.586205
   },
   {
-   "rank": 6,
+   "rank": 4,
+   "name_en": "King Salman Road",
+   "name_fr": "route du Roi-Salmane",
+   "road_ar": "طريق الملك سلمان",
+   "road_class": "trunk",
+   "near_station": "SAB Bank",
+   "near_station_m": 187,
+   "span_m": 141,
+   "detour_m": 4311,
+   "people": 2635,
+   "newly_10min": 775,
+   "gain_avg_min": 13.8,
+   "gain_max_min": 20.8,
+   "from_beyond_30min": 395,
+   "kind": "raccourci",
+   "existing_crossing_m": 225,
+   "lat": 24.82856,
+   "lon": 46.61791,
+   "note_en": "Checked on the satellite view: the construction site west of the metro line has been left out of the count.",
+   "note_fr": "Vérifié sur la vue satellite : le terrain en chantier à l'ouest de la ligne de métro a été retiré du décompte."
+  },
+  {
+   "rank": 5,
    "name_en": "King Fahd Road",
    "name_fr": "route du Roi-Fahd",
    "road_ar": "طريق الملك فهد",
@@ -121,7 +103,7 @@
    "lon": 46.683835
   },
   {
-   "rank": 7,
+   "rank": 6,
    "name_en": "King Fahd Road",
    "name_fr": "route du Roi-Fahd",
    "road_ar": "طريق الملك فهد",
@@ -141,27 +123,7 @@
    "lon": 46.69142
   },
   {
-   "rank": 8,
-   "name_en": "Othman bin Affan Road",
-   "name_fr": "route Othman-ben-Affan",
-   "road_ar": "طريق عثمان بن عفان",
-   "road_class": "primary",
-   "near_station": "Uthman Bin Affan Road",
-   "near_station_m": 178,
-   "span_m": 54,
-   "detour_m": 1848,
-   "people": 1937,
-   "newly_10min": 566,
-   "gain_avg_min": 8.5,
-   "gain_max_min": 15.0,
-   "from_beyond_30min": 0,
-   "kind": "raccourci",
-   "existing_crossing_m": 186,
-   "lat": 24.80001,
-   "lon": 46.696855
-  },
-  {
-   "rank": 9,
+   "rank": 7,
    "name_en": "King Fahd Road",
    "name_fr": "route du Roi-Fahd",
    "road_ar": "طريق الملك فهد",
@@ -181,7 +143,7 @@
    "lon": 46.667675
   },
   {
-   "rank": 10,
+   "rank": 8,
    "name_en": "Eastern Ring Road",
    "name_fr": "périphérique Est",
    "road_ar": "طريق الدائري الشرقي",
@@ -204,25 +166,25 @@
  "combined": {
   "within_5min": {
    "before": 103787,
-   "after": 103811
+   "after": 103912
   },
   "within_10min": {
    "before": 386906,
-   "after": 392623
+   "after": 391325
   },
   "within_15min": {
    "before": 769235,
-   "after": 795078
+   "after": 790363
   },
   "within_20min": {
    "before": 1192415,
-   "after": 1240238
+   "after": 1231895
   },
   "within_30min": {
    "before": 1965278,
-   "after": 2039125
+   "after": 2027960
   },
-  "people_gaining": 25675
+  "people_gaining": 19908
  },
- "method": "perpendicular footbridges every 50 m; people newly within 15 min (WorldPop 50 m grid); greedy, 500 m apart, >= 1500 people"
+ "method": "perpendicular footbridges every 50 m; people newly within 15 min (WorldPop 50 m grid); greedy, 500 m apart, >= 1500 people; field checks: 2 sites removed (existing crossing), 1 construction site neutralised"
 }
