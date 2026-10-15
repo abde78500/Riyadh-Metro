@@ -98,6 +98,30 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 #about ul{margin:4px 0;padding-left:18px}
 #about li{margin:3px 0}
 #about .by{color:var(--muted);margin:0 0 8px}
+/* footbridges tab */
+#bsum .big{font-size:28px;font-weight:600;line-height:1.1;color:var(--acc);font-variant-numeric:tabular-nums}
+#bsum .lead{font-size:13px;margin:2px 0 4px}
+#bsum .sm{font-size:12px;color:var(--muted)}
+.blist{list-style:none;margin:10px 0 0;padding:0;font-size:13px}
+.blist li{display:flex;align-items:center;gap:8px;padding:4px 4px;border-radius:4px;cursor:pointer}
+.blist li:hover{background:var(--soft)}
+.blist li[aria-current="true"]{background:#f3e3c3}
+.blist .n{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none}
+.blist .rd{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.blist .pp{width:46px;text-align:right;font-variant-numeric:tabular-nums}
+.blist .gm{width:56px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.blist .hd{cursor:default;color:var(--muted);font-size:12px}
+.blist .hd:hover{background:none}
+#bdet{margin:10px 0 0}
+#bdet .big{font-size:28px;font-weight:600;line-height:1.1;color:var(--acc);font-variant-numeric:tabular-nums}
+#bdet p{margin:4px 0;font-size:13px}
+#bdet .flag{background:var(--soft);border-left:3px solid var(--acc);padding:6px 8px;font-size:12px;margin:8px 0}
+#bback{margin:8px 0 0;padding:5px 9px;border:1px solid var(--rule);border-radius:4px;background:#fff;color:var(--ink);font-size:12px}
+.chk{display:flex;gap:6px;align-items:center;margin:12px 0 0;font-size:13px;cursor:pointer}
+#bleg{border-top:1px solid var(--rule);padding-top:10px;margin-top:10px}
+#bleg p{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.bnum{background:var(--ink);color:#fff;border:2px solid #fff;border-radius:50%;font:600 11px/18px "IBM Plex Sans",sans-serif;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.bnum.on{background:var(--acc);transform:scale(1.25)}
 #closeb{position:absolute;top:10px;right:10px;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);border-radius:4px}
 </style>
 </head>
@@ -109,6 +133,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
   <div class="tabs" role="tablist">
     <button id="tabR" type="button" role="tab" aria-selected="true">🚇 <b id="t_tabR"></b><small id="t_tabRs"></small></button>
     <button id="tabC" type="button" role="tab" aria-selected="false">📍 <b id="t_tabC"></b><small id="t_tabCs"></small></button>
+    <button id="tabB" type="button" role="tab" aria-selected="false">🌉 <b id="t_tabB"></b><small id="t_tabBs"></small></button>
   </div>
   <button id="summer" type="button" aria-pressed="false"><span id="t_summer"></span><small id="t_summerS"></small></button>
   <section id="pR">
@@ -123,6 +148,13 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
     <div id="wtrow" hidden><div id="t_wt"></div><div id="chips"></div><select id="sty" aria-label="Display"><option value="near"></option><option value="over"></option></select></div>
     <div id="stat"></div>
     <div id="info"></div>
+  </section>
+  <section id="pB" hidden>
+    <div id="bsum"></div>
+    <div id="bdet" hidden></div>
+    <ul id="blist" class="blist"></ul>
+    <label class="chk"><input type="checkbox" id="bex"><span id="t_bex"></span></label>
+    <div id="bleg"></div>
   </section>
   <div class="legend" id="legend"></div>
   <details><summary id="t_how"></summary><p class="note" id="note"></p></details>
@@ -139,12 +171,13 @@ TH.forEach(m => { const h = MIN_COLORS[m]; RGBM[m] = [1, 3, 5].map(i => parseInt
 const KMH = 4.8;   // walking speed used for the precomputed station zones
 const AUTH = 'KHAMASSI Abderrahmane';
 const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${AUTH}</p>
-<p>One map, two questions. <b>Reach</b>: from any point, how far can you get on foot, or on foot and by metro? <b>Coverage</b>: how far can you walk from each of the 83 stations, and how many people live within reach?</p>
+<p>One map, three questions. <b>Reach</b>: from any point, how far can you get on foot, or on foot and by metro? <b>Coverage</b>: how far can you walk from each of the 83 stations, and how many people live within reach? <b>Footbridges</b>: where would a pedestrian bridge bring the most people closer to the metro?</p>
 <h3>Method</h3><ul>
-<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses), keeping its largest connected part. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
+<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses). Footbridges and pedestrian underpasses mapped in OpenStreetMap are linked to the nearest streets. Small isolated pieces (under 50 points) are dropped. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
 <li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap. Door-to-door time = walk to a station + wait + ride (+ transfers) + walk from the arrival station, found with Dijkstra's algorithm on both networks, live in your browser.</li>
 <li>Default assumptions, adjustable under Reach: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li>
-<li>Coverage zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li></ul>
+<li>Coverage zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li>
+<li>Footbridges: every pair of street points less than 120 m apart on either side of a motorway, expressway or major avenue is tested as a new link (span + 1 min for stairs or lifts). For each one, walking times to the nearest station are recomputed on the same network, and only people who end up within 30 min of a station are counted; someone with no route today counts as 60 min. The 15 sites are picked one after another, each taking the previous ones into account, at least 500 m apart and more than 150 m from any footbridge or underpass already mapped in OpenStreetMap. Mapped footbridges that were missing from the network were added first.</li></ul>
 <h3>Limits</h3><ul>
 <li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>
 <li>Where OpenStreetMap lacks footpaths or includes private compounds, walking times can be over- or underestimated. Crossings depend on how traffic lights and pedestrian crossings are mapped in OpenStreetMap: a missing crossing makes a road look impassable.</li>
@@ -155,12 +188,13 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 <li>Basemap: Esri World Light Gray Canvas</li>
 <li>Tools: ArcGIS Pro, Python, Leaflet</li></ul>`;
 const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un projet de ${AUTH}</p>
-<p>Une carte, deux questions. <b>Portée</b> : depuis n'importe quel point, jusqu'où peut-on aller à pied, ou à pied et en métro ? <b>Couverture</b> : jusqu'où peut-on marcher depuis chacune des 83 stations, et combien d'habitants vivent à portée ?</p>
+<p>Une carte, trois questions. <b>Portée</b> : depuis n'importe quel point, jusqu'où peut-on aller à pied, ou à pied et en métro ? <b>Couverture</b> : jusqu'où peut-on marcher depuis chacune des 83 stations, et combien d'habitants vivent à portée ? <b>Passerelles</b> : où une passerelle piétonne rapprocherait-elle le plus d'habitants du métro ?</p>
 <h3>Méthode</h3><ul>
-<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains), en gardant sa plus grande partie connectée. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
+<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains). Les passerelles et souterrains piétons cartographiés dans OpenStreetMap sont reliés aux rues les plus proches. Les petits morceaux isolés (moins de 50 points) sont écartés. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
 <li>Le réseau de métro est construit à partir des 6 lignes et 83 stations d'OpenStreetMap. Temps de porte à porte = marche jusqu'à une station + attente + trajet (+ correspondances) + marche depuis la station d'arrivée, calculé avec l'algorithme de Dijkstra sur les deux réseaux, en direct dans ton navigateur.</li>
 <li>Hypothèses par défaut, réglables dans Portée : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li>
-<li>Les zones de Couverture utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li></ul>
+<li>Les zones de Couverture utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li>
+<li>Passerelles : chaque paire de points de rue à moins de 120 m l'un de l'autre, de part et d'autre d'une autoroute, voie rapide ou grande avenue, est testée comme un nouveau lien (portée + 1 min pour les escaliers ou ascenseurs). Pour chacune, les temps de marche jusqu'à la station la plus proche sont recalculés sur le même réseau, en ne comptant que les habitants qui arrivent à moins de 30 min d'une station ; une personne sans itinéraire aujourd'hui compte pour 60 min. Les 15 sites sont choisis l'un après l'autre en tenant compte des précédents, à au moins 500 m les uns des autres et à plus de 150 m de toute passerelle ou tout souterrain déjà cartographié dans OpenStreetMap. Les passerelles cartographiées absentes du réseau y ont d'abord été ajoutées.</li></ul>
 <h3>Limites</h3><ul>
 <li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>
 <li>Là où OpenStreetMap manque de cheminements piétons ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. Les traversées dépendent des feux et passages piétons cartographiés dans OpenStreetMap : un passage manquant rend une avenue infranchissable sur la carte.</li>
@@ -199,7 +233,27 @@ const T = {
   share:p => p.toFixed(1) + '% of the population of ' + lab(),
   topT:m => 'Top 5 stations: people within ' + m + ' min',
   summer:'☀️ Summer mode', summerS:n => 'At 45 °C, nobody walks far: each walk is capped at ' + n + ' min', summerOn:n => '☀️ Summer mode: at most ' + n + ' min on foot to and from the metro.', cap:'Longest walk in summer', b_plan:'Map', b_sat:'Satellite', b_osm:'OpenStreetMap',
-  lines:{Blue:'Blue Line', Red:'Red Line', Orange:'Orange Line', Yellow:'Yellow Line', Green:'Green Line', Purple:'Purple Line'}},
+  lines:{Blue:'Blue Line', Red:'Red Line', Orange:'Orange Line', Yellow:'Yellow Line', Green:'Green Line', Purple:'Purple Line'},
+  tabB:'Footbridges', tabBs:'where to build',
+  subB:'Riyadh: where a pedestrian bridge would bring the most people closer to the metro on foot.',
+  loadingB:'Loading the footbridge analysis…', err2b:'. Check that passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson and passerelles_stats.json sit next to this page.',
+  bSum:(n, k) => [cmp(n), 'more people within 15 min on foot of a station with these ' + k + ' footbridges.'],
+  bSum2:(a, b) => cmp(a) + ' more within 10 min · ' + cmp(b) + ' people in all reach a station faster.',
+  bHead:['Site', 'People', 'Gain'], bAvg:'min',
+  bBig:'people reach a station faster',
+  bGain:(a, m) => 'They save ' + a + ' min on average (up to ' + m + ' min).',
+  bNew:(a, b) => fmt(a) + ' people come within 10 min of a station, ' + fmt(b) + ' within 15 min.',
+  bSpan:(s, c) => 'Span about ' + s + ' m, over ' + c + '.',
+  bDet:d => d == null ? 'Today the network finds no walking route between the two ends.' : 'Today, walking from one end to the other takes a ' + (d / 1000).toFixed(1) + ' km detour.',
+  bEx:d => 'Nearest footbridge or underpass already mapped: ' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') + '.',
+  bCut:'Most of these people are more than 30 min from a station today, because the road cuts their district off on the map. Check on the satellite view: a crossing may exist but be missing in OpenStreetMap.',
+  bShort:'Short span: a signal-controlled pedestrian crossing could do the same job.',
+  bBack:'All sites', bExL:'Show footbridges and underpasses already mapped',
+  bExT:s => s === 'unlinkable' ? 'Mapped in OpenStreetMap, not connected to any street (ignored)' : 'Mapped in OpenStreetMap, in the walking network',
+  bLeg:'Minutes saved to reach the nearest station', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
+  rcN:{motorway:'Expressway', trunk:'Expressway', motorway_link:'Expressway ramp', trunk_link:'Expressway ramp', primary:'Major avenue'},
+  rc:{motorway:'an expressway', trunk:'an expressway', motorway_link:'an expressway ramp', trunk_link:'an expressway ramp', primary:'a major avenue'},
+  noteB:'Each numbered line is a proposed footbridge; the green areas are where people would reach a station faster, darker for bigger gains. Sites are ranked by the walking time saved by everyone within 30 min of a station, at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
  fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
   tabR:'Portée', tabRs:'depuis un point', tabC:'Couverture', tabCs:'autour des stations',
   subR:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
@@ -228,7 +282,27 @@ const T = {
   share:p => p.toFixed(1).replace('.', ',') + ' % de la population de ' + lab(),
   topT:m => 'Top 5 des stations : habitants à moins de ' + m + ' min',
   summer:'☀️ Mode été', summerS:n => 'À 45 °C, personne ne marche longtemps : chaque trajet à pied est limité à ' + n + ' min', summerOn:n => '☀️ Mode été : au plus ' + n + ' min à pied pour aller au métro et en repartir.', cap:'Marche maximale en été', b_plan:'Plan', b_sat:'Satellite', b_osm:'OpenStreetMap',
-  lines:{Blue:'Ligne bleue', Red:'Ligne rouge', Orange:'Ligne orange', Yellow:'Ligne jaune', Green:'Ligne verte', Purple:'Ligne violette'}}
+  lines:{Blue:'Ligne bleue', Red:'Ligne rouge', Orange:'Ligne orange', Yellow:'Ligne jaune', Green:'Ligne verte', Purple:'Ligne violette'},
+  tabB:'Passerelles', tabBs:'où les construire',
+  subB:"Riyadh : où une passerelle piétonne rapprocherait le plus d'habitants du métro à pied.",
+  loadingB:"Chargement de l'analyse des passerelles…", err2b:'. Vérifie que passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson et passerelles_stats.json sont à côté de cette page.',
+  bSum:(n, k) => [cmp(n), "habitants de plus à moins de 15 min à pied d'une station avec ces " + k + ' passerelles.'],
+  bSum2:(a, b) => cmp(a) + ' de plus à moins de 10 min · ' + cmp(b) + ' habitants au total rejoignent une station plus vite.',
+  bHead:['Site', 'Habitants', 'Gain'], bAvg:'min',
+  bBig:'habitants rejoignent une station plus vite',
+  bGain:(a, m) => 'Ils gagnent ' + String(a).replace('.', ',') + ' min en moyenne (jusqu\'à ' + String(m).replace('.', ',') + ' min).',
+  bNew:(a, b) => fmt(a) + " habitants passent à moins de 10 min d'une station, " + fmt(b) + ' à moins de 15 min.',
+  bSpan:(s, c) => 'Portée d\'environ ' + s + ' m, au-dessus ' + c + '.',
+  bDet:d => d == null ? "Aujourd'hui, le réseau ne trouve aucun itinéraire à pied entre les deux extrémités." : "Aujourd'hui, aller à pied d'une extrémité à l'autre impose un détour de " + (d / 1000).toFixed(1).replace('.', ',') + ' km.',
+  bEx:d => 'Passerelle ou souterrain déjà cartographié le plus proche : ' + (d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : d + ' m') + '.',
+  bCut:"La plupart de ces habitants sont aujourd'hui à plus de 30 min d'une station, parce que la voie coupe leur quartier sur la carte. À vérifier sur la vue satellite : une traversée existe peut-être mais manque dans OpenStreetMap.",
+  bShort:'Portée courte : un passage piéton à feux pourrait jouer le même rôle.',
+  bBack:'Tous les sites', bExL:'Afficher les passerelles et souterrains déjà cartographiés',
+  bExT:s => s === 'unlinkable' ? "Cartographié dans OpenStreetMap, relié à aucune rue (ignoré)" : 'Cartographié dans OpenStreetMap, dans le réseau piéton',
+  bLeg:"Minutes gagnées pour rejoindre la station la plus proche", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
+  rcN:{motorway:'Voie rapide', trunk:'Voie rapide', motorway_link:'Bretelle de voie rapide', trunk_link:'Bretelle de voie rapide', primary:'Grande avenue'},
+  rc:{motorway:"d'une voie rapide", trunk:"d'une voie rapide", motorway_link:"d'une bretelle de voie rapide", trunk_link:"d'une bretelle de voie rapide", primary:"d'une grande avenue"},
+  noteB:"Chaque trait numéroté est une passerelle proposée ; les zones vertes montrent où les habitants rejoindraient une station plus vite, plus foncé pour les plus gros gains. Les sites sont classés selon le temps de marche gagné par tous les habitants à moins de 30 min d'une station, à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
 };
 let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
@@ -610,14 +684,99 @@ function applySummer() {
 }
 $('summer').addEventListener('click', () => { P.summer = !P.summer; applySummer(); });
 
+/* ================= FOOTBRIDGES ================= */
+const GAIN_C = {1:'#dcefc9', 5:'#a9d48c', 10:'#5fae58', 20:'#23703a'};
+const BRG = {p:null, br:null, zones:null, ex:null, st:null, layer:null, exLayer:null, cur:null};
+function loadBrg() {
+  if (!BRG.p) BRG.p = Promise.all(['passerelles.geojson', 'passerelles_gain.geojson', 'passerelles_existantes.geojson', 'passerelles_stats.json'].map(getJSON))
+    .then(([b, z, e, s]) => { BRG.br = b; BRG.zones = z; BRG.ex = e; BRG.st = s; });
+  return BRG.p;
+}
+function clearBrg() { [BRG.layer, BRG.exLayer].forEach(l => { if (l) map.removeLayer(l); }); BRG.layer = BRG.exLayer = null; }
+const roadOf = p => (p.road && p.road !== '—' ? p.road : '') || T[lang].rcN[p.road_class] || p.road_class;
+function drawBrg(fit) {
+  clearBrg();
+  const g = L.layerGroup(), cur = BRG.cur;
+  L.geoJSON(BRG.zones.features.filter(f => cur == null || f.properties.rank === cur), {pane:'iso',
+    style: f => ({weight:0, fillColor:GAIN_C[f.properties.gain_lo], fillOpacity:.72}),
+    onEachFeature: (f, l) => l.bindTooltip(() => '#' + f.properties.rank + ' · ' + tr('bZone')(f.properties.gain_min, f.properties.people), {sticky:true})}).addTo(g);
+  BRG.br.features.forEach(f => {
+    const p = f.properties, on = cur == null || cur === p.rank, ll = f.geometry.coordinates.map(c => [c[1], c[0]]);
+    L.polyline(ll, {pane:'lines', color:'#fff', weight:10, opacity:on ? 1 : .5, interactive:false}).addTo(g);
+    L.polyline(ll, {pane:'lines', color: cur === p.rank ? '#8a4a28' : '#16222b', weight:5, opacity:on ? 1 : .45, interactive:false}).addTo(g);
+    const mk = L.marker([p.lat, p.lon], {pane:'stations', keyboard:false, opacity:on ? 1 : .55,
+      icon:L.divIcon({className:'bnum' + (cur === p.rank ? ' on' : ''), html:String(p.rank), iconSize:[22, 22]})}).addTo(g);
+    mk.bindTooltip(() => '#' + p.rank + ' · ' + roadOf(p) + ' · ' + fmt(p.people) + ' ' + tr('ppl'));
+    mk.on('click', ev => { L.DomEvent.stop(ev); pickBrg(cur === p.rank ? null : p.rank); });
+  });
+  BRG.layer = g.addTo(map);
+  if ($('bex').checked) {
+    BRG.exLayer = L.geoJSON(BRG.ex, {pane:'stations', pointToLayer: (f, ll) => L.circleMarker(ll, {radius:4, weight:1.5, color:'#16222b',
+      fillColor: f.properties.status === 'unlinkable' ? '#fff' : '#5d6b75', fillOpacity:1}),
+      onEachFeature: (f, l) => l.bindTooltip(() => tr('bExT')(f.properties.status))}).addTo(map);
+  }
+  if (fit) {
+    const src = cur == null ? BRG.br.features : BRG.zones.features.filter(f => f.properties.rank === cur);
+    const b = L.geoJSON(src).getBounds(); if (b.isValid()) map.fitBounds(b, {padding:[40, 40], maxZoom: cur == null ? 13 : 15});
+  }
+}
+function showBrg() {
+  const st = BRG.st, c = st.combined, n = BRG.br.features.length;
+  const s = $('bsum'); s.innerHTML = '';
+  const add = (el, cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; el.appendChild(d); return d; };
+  const [big, lead] = tr('bSum')(c.within_15min.after - c.within_15min.before, n);
+  add(s, 'big', '+' + big); add(s, 'lead', lead);
+  add(s, 'sm', '+' + tr('bSum2')(c.within_10min.after - c.within_10min.before, c.people_gaining));
+  const ul = $('blist'); ul.innerHTML = '';
+  const hd = document.createElement('li'); hd.className = 'hd';
+  hd.innerHTML = '<span class="n" style="background:none"></span><span class="rd"></span><span class="pp"></span><span class="gm"></span>';
+  [...hd.children].slice(1).forEach((e, i) => { e.textContent = tr('bHead')[i]; }); ul.appendChild(hd);
+  BRG.br.features.forEach(f => {
+    const p = f.properties, li = document.createElement('li');
+    li.innerHTML = '<span class="n"></span><bdi class="rd"></bdi><span class="pp"></span><span class="gm"></span>';
+    li.children[0].textContent = p.rank; li.children[1].textContent = roadOf(p);
+    li.children[2].textContent = cmp(p.people); li.children[3].textContent = '+' + Math.round(p.gain_avg_min) + ' ' + tr('bAvg');
+    li.setAttribute('aria-current', BRG.cur === p.rank); li.tabIndex = 0;
+    li.addEventListener('click', () => pickBrg(BRG.cur === p.rank ? null : p.rank));
+    li.addEventListener('keydown', e => { if (e.key === 'Enter') pickBrg(BRG.cur === p.rank ? null : p.rank); });
+    ul.appendChild(li);
+  });
+  const d = $('bdet'); d.innerHTML = ''; d.hidden = BRG.cur == null; s.hidden = BRG.cur != null;
+  if (BRG.cur != null) {
+    const p = BRG.br.features.find(f => f.properties.rank === BRG.cur).properties;
+    const h = document.createElement('div'); h.style.fontWeight = 600; h.textContent = '#' + p.rank + ' · '; const r = document.createElement('bdi'); r.textContent = roadOf(p); h.appendChild(r); d.appendChild(h);
+    add(d, 'big', fmt(p.people)); add(d, 'lead', tr('bBig'));
+    [tr('bGain')(p.gain_avg_min, p.gain_max_min), tr('bNew')(p.newly_10min, p.newly_15min), tr('bSpan')(p.span_m, T[lang].rc[p.road_class] || p.road_class),
+     tr('bDet')(p.detour_m), tr('bEx')(p.existing_crossing_m)].forEach(t => { const q = document.createElement('p'); q.textContent = t; d.appendChild(q); });
+    if (p.kind === 'reconnexion') add(d, 'flag', tr('bCut'));
+    if (p.span_m < 40) add(d, 'flag', tr('bShort'));
+    const b = document.createElement('button'); b.id = 'bback'; b.type = 'button'; b.textContent = '← ' + tr('bBack');
+    b.addEventListener('click', () => pickBrg(null)); d.appendChild(b);
+  }
+  const lg = $('bleg'); lg.innerHTML = ''; const lp = document.createElement('p'); lp.textContent = tr('bLeg'); lg.appendChild(lp);
+  [[1, '1–4'], [5, '5–9'], [10, '10–19'], [20, '20+']].forEach(([k, t]) => {
+    const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw"></span><span></span>';
+    r.children[0].style.background = GAIN_C[k]; r.children[1].textContent = t + ' ' + tr('min'); lg.appendChild(r);
+  });
+}
+function pickBrg(rank) { BRG.cur = rank; showBrg(); drawBrg(true); }
+$('bex').addEventListener('change', () => drawBrg(false));
+
 /* ================= TABS ================= */
 function setTab(t, keepUrl) {
   tab = t;
-  $('tabR').setAttribute('aria-selected', t === 'reach'); $('tabC').setAttribute('aria-selected', t === 'cov');
-  $('pR').hidden = t !== 'reach'; $('pC').hidden = t !== 'cov';
-  if (!keepUrl) try { history.replaceState(null, '', t === 'cov' ? '#coverage' : location.pathname + location.search); } catch (e) {}
+  $('tabR').setAttribute('aria-selected', t === 'reach'); $('tabC').setAttribute('aria-selected', t === 'cov'); $('tabB').setAttribute('aria-selected', t === 'brg');
+  $('pR').hidden = t !== 'reach'; $('pC').hidden = t !== 'cov'; $('pB').hidden = t !== 'brg';
+  $('summer').hidden = t === 'brg'; $('legend').hidden = t === 'brg';
+  if (!keepUrl) try { history.replaceState(null, '', t === 'cov' ? '#coverage' : t === 'brg' ? '#footbridges' : location.pathname + location.search); } catch (e) {}
+  if (t !== 'brg') clearBrg();
   if (t === 'reach') {
     clearCov(); cv.style.display = ''; if (om) om.addTo(map); refreshGrid();
+  } else if (t === 'brg') {
+    clearCov(); cv.style.display = 'none'; tip.style.display = 'none'; if (om) map.removeLayer(om);
+    $('bsum').hidden = false; $('bsum').className = ''; $('bsum').textContent = tr('loadingB');
+    loadBrg().then(() => { if (tab !== 'brg') return; showBrg(); drawBrg(!BRG._opened); BRG._opened = true; })
+      .catch(e => { $('bsum').className = 'error'; $('bsum').textContent = tr('err') + (e.message || '') + tr('err2b'); });
   } else {
     cv.style.display = 'none'; tip.style.display = 'none'; if (om) map.removeLayer(om);
     $('info').className = ''; $('info').textContent = tr('loadingC');
@@ -628,18 +787,20 @@ function setTab(t, keepUrl) {
 }
 $('tabR').addEventListener('click', () => setTab('reach'));
 $('tabC').addEventListener('click', () => setTab('cov'));
+$('tabB').addEventListener('click', () => setTab('brg'));
 
 /* ================= TEXTS / LANGUAGE ================= */
 function texts() {
-  $('sub').textContent = tab === 'cov' ? tr('subC') : (P.only ? tr('subW') : tr('subR'));
+  $('sub').textContent = tab === 'brg' ? tr('subB') : tab === 'cov' ? tr('subC') : (P.only ? tr('subW') : tr('subR'));
   $('hint').textContent = P.only ? tr('hintW') : tr('hintM');
-  $('note').textContent = tab === 'cov' ? tr('noteC') : tr('noteR');
+  $('note').textContent = tab === 'brg' ? tr('noteB') : tab === 'cov' ? tr('noteC') : tr('noteR');
   $('t_summer').textContent = tr('summer'); $('t_summerS').textContent = tr('summerS')(P.cap);
 }
 function applyLang() {
   document.documentElement.lang = lang; document.title = tr('title') + ' – Riyadh';
   $('t1').textContent = tr('title'); $('lang').textContent = tr('toggle');
   $('t_tabR').textContent = tr('tabR'); $('t_tabRs').textContent = tr('tabRs'); $('t_tabC').textContent = tr('tabC'); $('t_tabCs').textContent = tr('tabCs');
+  $('t_tabB').textContent = tr('tabB'); $('t_tabBs').textContent = tr('tabBs'); $('t_bex').textContent = tr('bExL');
   $('segM').textContent = tr('segM'); $('segW').textContent = tr('segW'); $('lset').textContent = tr('set'); $('t_how').textContent = tr('how');
   $('t_wt').textContent = tr('wt'); [...$('sty').options].forEach(o => { o.textContent = o.value === 'near' ? tr('allT') : tr('allO'); });
   document.querySelectorAll('#chips .tm').forEach(e => { e.textContent = e.dataset.m + ' ' + tr('min'); });
@@ -650,6 +811,7 @@ function applyLang() {
   a.addEventListener('click', e => { e.preventDefault(); openAbout(); }); c.appendChild(a);
   texts(); setFollow(); report(); showLegend();
   if (COV.iso) { buildSelect(); if (tab === 'cov') { showInfoC(); showStat(); } }
+  if (BRG.st && tab === 'brg') showBrg();
 }
 let lastFocus = null;
 function openAbout() { lastFocus = document.activeElement; $('about').hidden = false; $('closeb').focus(); }
@@ -679,7 +841,7 @@ Promise.all(['network.json', 'lignes.geojson', 'walk_graph.json'].map(getJSON))
   origin = L.latLng(LAT0, LNG0);
   om = L.circleMarker(origin, {pane:'stations', radius:8, color:'#16222b', weight:2, fillColor:'#ffd400', fillOpacity:1, interactive:false});
   map.fitBounds(L.latLngBounds(S.map(s => [s.y, s.x])), {padding:[40, 40]});
-  if (location.hash === '#coverage') setTab('cov', true); else { om.addTo(map); refreshGrid(); }
+  if (location.hash === '#footbridges') setTab('brg', true); else if (location.hash === '#coverage') setTab('cov', true); else { om.addTo(map); refreshGrid(); }
 })
 .catch(e => { $('out').className = 'error'; $('out').textContent = tr('err') + (e.message || '') + tr('err2'); });
 </script>
