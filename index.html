@@ -153,7 +153,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
   </section>
   <section id="pB" hidden>
     <div id="t_bmeas" class="hint" style="margin:0 0 4px"></div>
-    <div class="seg" id="bseg" role="group"><button type="button" data-t="10" aria-pressed="false">10 min</button><button type="button" data-t="15" aria-pressed="true">15 min</button><button type="button" data-t="20" aria-pressed="false">20 min</button></div>
+    <div class="seg" id="bseg" role="group"><button type="button" data-t="10" aria-pressed="false">10 min</button><button type="button" data-t="15" aria-pressed="true">15 min</button><button type="button" data-t="20" aria-pressed="false">20 min</button><button type="button" data-t="all" aria-pressed="false" id="t_ball"></button></div>
     <div id="bsum"></div>
     <div id="bdet" hidden></div>
     <ul id="blist" class="blist"></ul>
@@ -247,6 +247,8 @@ const T = {
   bIntro:t => 'For each site: how many people would come within ' + t + ' min on foot of a station thanks to the footbridge, and how many minutes they would save on average. Click a site to see where they live.', bMeasure:'Walking time to the station',
   bBig:t => 'people come within ' + t + ' min on foot of a station',
   bGain:a => 'They save ' + a + ' min on average.',
+  bAll:'All 3', bSumAll:(a, c) => '+' + cmp(a) + ' within 10 min · +' + cmp(c) + ' within 20 min.', bDetAll:(a, c) => fmt(a) + ' within 10 min · ' + fmt(c) + ' within 20 min.',
+  bGainAll:(a, b, c) => 'Average time saved: ' + a + ' / ' + b + ' / ' + c + ' min (10 / 15 / 20 min).', bLegAll:'Area that comes within 10, 15 or 20 min on foot of a station with the footbridge', bWithin:'within ',
   bNew:(a, b) => fmt(a) + ' of them within 10 min.',
   bSpan:(s, c) => 'Span about ' + s + ' m, over ' + c + '.',
   bDet:d => d == null ? 'Today the network finds no walking route between the two ends.' : 'Today, walking from one end to the other takes a ' + (d / 1000).toFixed(1) + ' km detour.',
@@ -299,6 +301,8 @@ const T = {
   bIntro:t => "Pour chaque site : combien d'habitants arriveraient grâce à la passerelle à moins de " + t + " min à pied d'une station, et combien de minutes ils gagneraient en moyenne. Clique un site pour voir où ils habitent.", bMeasure:'Temps de marche jusqu\'à la station',
   bBig:t => "habitants arrivent à moins de " + t + " min à pied d'une station",
   bGain:a => 'Ils gagnent ' + String(a).replace('.', ',') + ' min en moyenne.',
+  bAll:'Les 3', bSumAll:(a, c) => '+' + cmp(a) + ' à moins de 10 min · +' + cmp(c) + ' à moins de 20 min.', bDetAll:(a, c) => fmt(a) + ' à moins de 10 min · ' + fmt(c) + ' à moins de 20 min.',
+  bGainAll:(a, b, c) => 'Temps gagné en moyenne : ' + [a, b, c].map(x => String(x).replace('.', ',')).join(' / ') + ' min (10 / 15 / 20 min).', bLegAll:"Zone qui passe à moins de 10, 15 ou 20 min à pied d'une station grâce à la passerelle", bWithin:'moins de ',
   bNew:(a, b) => fmt(a) + ' d\'entre eux à moins de 10 min.',
   bSpan:(s, c) => 'Portée d\'environ ' + s + ' m, au-dessus ' + c + '.',
   bDet:d => d == null ? "Aujourd'hui, le réseau ne trouve aucun itinéraire à pied entre les deux extrémités." : "Aujourd'hui, aller à pied d'une extrémité à l'autre impose un détour de " + (d / 1000).toFixed(1).replace('.', ',') + ' km.',
@@ -463,7 +467,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '28';   // bump after each data update so browsers reload the files
+const V = '29';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -698,7 +702,8 @@ $('summer').addEventListener('click', () => { P.summer = !P.summer; applySummer(
 /* ================= FOOTBRIDGES ================= */
 const GAIN_C = {2:'#b9e09b', 5:'#7cc464', 10:'#3e9a46', 20:'#1b5e2e'};
 const BRG = {p:null, br:null, zones:null, ex:null, st:null, layer:null, exLayer:null, cur:null, t:15};
-const PP = p => p['people_' + BRG.t] != null ? p['people_' + BRG.t] : p.people, PG = p => p['gain_avg_' + BRG.t] != null ? p['gain_avg_' + BRG.t] : p.gain_avg_min;
+const TT = () => BRG.t === 'all' ? 15 : BRG.t, ZC = {10:'#1f6b34', 15:'#4fa356', 20:'#a6d68c'}, ZO = {10:.62, 15:.5, 20:.45};
+const PP = (p, t = TT()) => p['people_' + t] != null ? p['people_' + t] : p.people, PG = (p, t = TT()) => p['gain_avg_' + t] != null ? p['gain_avg_' + t] : p.gain_avg_min;
 function loadBrg() {
   if (!BRG.p) BRG.p = Promise.all(['passerelles.geojson', 'passerelles_gain.geojson', 'passerelles_existantes.geojson', 'passerelles_stats.json'].map(getJSON))
     .then(([b, z, e, s]) => { BRG.br = b; BRG.zones = z; BRG.ex = e; BRG.st = s; });
@@ -709,10 +714,10 @@ const roadOf = p => { const n = (lang === 'fr' ? p.name_fr : p.name_en) || T[lan
 function drawBrg(fit) {
   clearBrg();
   const g = L.layerGroup(), cur = BRG.cur;
-  const zf = BRG.zones.features.filter(f => (cur == null || f.properties.rank === cur) && (f.properties.t == null || f.properties.t === BRG.t));
+  const zf = BRG.zones.features.filter(f => (cur == null || f.properties.rank === cur) && (BRG.t === 'all' || f.properties.t === BRG.t)).sort((a, b) => b.properties.t - a.properties.t);
   L.geoJSON(zf, {pane:'iso',
-    style: {color:'#23703a', weight:1.2, opacity:.9, fillColor:'#3e9a46', fillOpacity:.5},
-    onEachFeature: (f, l) => l.bindTooltip(() => '#' + f.properties.rank + ' · ' + tr('bZone')(BRG.t, f.properties.people), {sticky:true})}).addTo(g);
+    style: f => ({color:ZC[f.properties.t], weight:1, opacity:.9, fillColor:ZC[f.properties.t], fillOpacity:ZO[f.properties.t]}),
+    onEachFeature: (f, l) => l.bindTooltip(() => '#' + f.properties.rank + ' · ' + tr('bZone')(f.properties.t, f.properties.people), {sticky:true})}).addTo(g);
   BRG.br.features.forEach(f => {
     const p = f.properties, on = cur == null || cur === p.rank, ll = f.geometry.coordinates.map(c => [c[1], c[0]]);
     L.polyline(ll, {pane:'lines', color:'#fff', weight:10, opacity:on ? 1 : .5, interactive:false}).addTo(g);
@@ -729,7 +734,7 @@ function drawBrg(fit) {
       onEachFeature: (f, l) => l.bindTooltip(() => tr('bExT')(f.properties.status))}).addTo(map);
   }
   if (fit) {
-    const src = cur == null ? BRG.br.features : BRG.zones.features.filter(f => f.properties.rank === cur && (f.properties.t == null || f.properties.t === BRG.t));
+    const src = cur == null ? BRG.br.features : BRG.zones.features.filter(f => f.properties.rank === cur && (BRG.t === 'all' || f.properties.t === BRG.t));
     const b = L.geoJSON(src).getBounds(); if (b.isValid()) map.fitBounds(b, {padding:[40, 40], maxZoom: cur == null ? 13 : 15});
   }
 }
@@ -737,20 +742,24 @@ function showBrg() {
   const st = BRG.st, c = st.combined, n = BRG.br.features.length;
   const s = $('bsum'); s.innerHTML = '';
   const add = (el, cls, txt) => { const d = document.createElement('div'); d.className = cls; d.textContent = txt; el.appendChild(d); return d; };
-  const ct = c['within_' + BRG.t + 'min'], [big, lead] = tr('bSum')(ct.after - ct.before, n, BRG.t);
+  const dlt = t => c['within_' + t + 'min'].after - c['within_' + t + 'min'].before, [big, lead] = tr('bSum')(dlt(TT()), n, TT());
   add(s, 'big', '+' + big); add(s, 'lead', lead);
-  add(s, 'hint', tr('bIntro')(BRG.t));
+  if (BRG.t === 'all') add(s, 'sm', tr('bSumAll')(dlt(10), dlt(20)));
+  add(s, 'hint', tr('bIntro')(TT()));
+  $('t_ball').textContent = tr('bAll');
   $('t_bmeas').textContent = tr('bMeasure');
-  document.querySelectorAll('#bseg button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.t === BRG.t));
+  document.querySelectorAll('#bseg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t) === String(BRG.t)));
+  const ALL = BRG.t === 'all', cols = ALL ? ['10 min', '15 min', '20 min'] : tr('bHead').slice(1);
   const ul = $('blist'); ul.innerHTML = '';
   const hd = document.createElement('li'); hd.className = 'hd';
-  hd.innerHTML = '<span class="n" style="background:none"></span><span class="rd"></span><span class="pp"></span><span class="gm"></span>';
-  [...hd.children].slice(1).forEach((e, i) => { e.textContent = tr('bHead')[i]; }); ul.appendChild(hd);
+  hd.innerHTML = '<span class="n" style="background:none"></span><span class="rd"></span>' + (ALL ? '<span class="pp"></span><span class="pp"></span><span class="pp"></span>' : '<span class="pp"></span><span class="gm"></span>');
+  hd.children[1].textContent = tr('bHead')[0]; cols.forEach((t, i) => { hd.children[i + 2].textContent = t; }); ul.appendChild(hd);
   BRG.br.features.slice().sort((a, b) => PP(b.properties) - PP(a.properties)).forEach(f => {
     const p = f.properties, li = document.createElement('li');
-    li.innerHTML = '<span class="n"></span><bdi class="rd"></bdi><span class="pp"></span><span class="gm"></span>';
+    li.innerHTML = '<span class="n"></span><bdi class="rd"></bdi>' + (ALL ? '<span class="pp"></span><span class="pp"></span><span class="pp"></span>' : '<span class="pp"></span><span class="gm"></span>');
     li.children[0].textContent = p.rank; li.children[1].textContent = roadOf(p);
-    li.children[2].textContent = cmp(PP(p)); li.children[3].textContent = '+' + Math.round(PG(p)) + ' ' + tr('bAvg');
+    if (ALL) [10, 15, 20].forEach((t, i) => { li.children[i + 2].textContent = cmp(PP(p, t)); });
+    else { li.children[2].textContent = cmp(PP(p)); li.children[3].textContent = '+' + Math.round(PG(p)) + ' ' + tr('bAvg'); }
     li.setAttribute('aria-current', BRG.cur === p.rank); li.tabIndex = 0;
     li.addEventListener('click', () => pickBrg(BRG.cur === p.rank ? null : p.rank));
     li.addEventListener('keydown', e => { if (e.key === 'Enter') pickBrg(BRG.cur === p.rank ? null : p.rank); });
@@ -760,8 +769,8 @@ function showBrg() {
   if (BRG.cur != null) {
     const p = BRG.br.features.find(f => f.properties.rank === BRG.cur).properties;
     const h = document.createElement('div'); h.style.fontWeight = 600; h.textContent = '#' + p.rank + ' · '; const r = document.createElement('bdi'); r.textContent = roadOf(p); h.appendChild(r); d.appendChild(h);
-    add(d, 'big', fmt(PP(p))); add(d, 'lead', tr('bBig')(BRG.t));
-    [tr('bGain')(PG(p)), tr('bSpan')(p.span_m, T[lang].rc[p.road_class] || p.road_class),
+    add(d, 'big', fmt(PP(p))); add(d, 'lead', tr('bBig')(TT()));
+    [ALL ? tr('bDetAll')(PP(p, 10), PP(p, 20)) : tr('bGain')(PG(p)), ...(ALL ? [tr('bGainAll')(PG(p, 10), PG(p, 15), PG(p, 20))] : []), tr('bSpan')(p.span_m, T[lang].rc[p.road_class] || p.road_class),
      tr('bNear')(p.near_station, p.near_station_m), tr('bDet')(p.detour_m), tr('bEx')(p.existing_crossing_m)].forEach(t => { const q = document.createElement('p'); q.textContent = t; d.appendChild(q); });
     if (p.kind === 'reconnexion') add(d, 'flag', tr('bCut'));
     if (p['note_' + lang]) add(d, 'flag', p['note_' + lang]);
@@ -769,9 +778,9 @@ function showBrg() {
     const b = document.createElement('button'); b.id = 'bback'; b.type = 'button'; b.textContent = '← ' + tr('bBack');
     b.addEventListener('click', () => pickBrg(null)); d.appendChild(b);
   }
-  const lg = $('bleg'); lg.innerHTML = ''; const lp = document.createElement('p'); lp.textContent = tr('bLeg')(BRG.t); lg.appendChild(lp);
-  { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw" style="background:rgba(62,154,70,.5);border-color:#23703a"></span><span></span>';
-    r.children[1].textContent = BRG.t + ' min'; lg.appendChild(r); }
+  const lg = $('bleg'); lg.innerHTML = ''; const lp = document.createElement('p'); lp.textContent = ALL ? tr('bLegAll') : tr('bLeg')(BRG.t); lg.appendChild(lp);
+  (ALL ? [10, 15, 20] : [BRG.t]).forEach(t => { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw"></span><span></span>';
+    r.children[0].style.cssText = 'background:' + ZC[t] + ';opacity:' + (ZO[t] + .25) + ';border-color:' + ZC[t]; r.children[1].textContent = (ALL ? tr('bWithin') : '') + t + ' min'; lg.appendChild(r); });
   if ($('bex').checked) tr('bExLeg').forEach((t, i) => {
     const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span style="width:22px;display:flex;justify-content:center;flex:none"><i class="exb' + (i ? ' off' : '') + '" style="display:block;width:11px;height:11px"></i></span><span></span>';
     r.children[1].textContent = t; lg.appendChild(r);
@@ -779,7 +788,7 @@ function showBrg() {
 }
 function pickBrg(rank) { BRG.cur = rank; showBrg(); drawBrg(true); }
 $('bex').addEventListener('change', () => { drawBrg(false); showBrg(); });
-document.querySelectorAll('#bseg button').forEach(b => b.addEventListener('click', () => { BRG.t = +b.dataset.t; showBrg(); drawBrg(BRG.cur != null); }));
+document.querySelectorAll('#bseg button').forEach(b => b.addEventListener('click', () => { BRG.t = b.dataset.t === 'all' ? 'all' : +b.dataset.t; showBrg(); drawBrg(BRG.cur != null); }));
 
 /* ================= TABS ================= */
 function setTab(t, keepUrl) {
