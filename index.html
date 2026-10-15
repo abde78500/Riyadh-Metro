@@ -121,6 +121,8 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 #bleg{border-top:1px solid var(--rule);padding-top:10px;margin-top:10px}
 #bleg p{margin:0 0 6px;font-size:13px;color:var(--muted)}
 .bnum{background:var(--ink);color:#fff;border:2px solid #fff;border-radius:50%;font:600 11px/18px "IBM Plex Sans",sans-serif;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.exb{background:#0f766e;border:2px solid #fff;border-radius:2px;box-sizing:border-box;box-shadow:0 0 0 1px #0f766e,0 1px 3px rgba(0,0,0,.35)}
+.exb.off{background:#fff;border-color:#0f766e;box-shadow:none}
 .bnum.on{background:var(--acc);transform:scale(1.25)}
 #closeb{position:absolute;top:10px;right:10px;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);border-radius:4px}
 </style>
@@ -173,7 +175,7 @@ const AUTH = 'KHAMASSI Abderrahmane';
 const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${AUTH}</p>
 <p>One map, three questions. <b>Reach</b>: from any point, how far can you get on foot, or on foot and by metro? <b>Coverage</b>: how far can you walk from each of the 83 stations, and how many people live within reach? <b>Footbridges</b>: where would a pedestrian bridge bring the most people closer to the metro?</p>
 <h3>Method</h3><ul>
-<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses). Footbridges and pedestrian underpasses mapped in OpenStreetMap are linked to the nearest streets. Small isolated pieces (under 50 points) are dropped. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
+<li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses). Major avenues have a sidewalk on each side: you can walk along them, but not cross them elsewhere. Footbridges and pedestrian underpasses mapped in OpenStreetMap are linked to the nearest sidewalk or street. Small isolated pieces (under 50 points) are dropped. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
 <li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap. Door-to-door time = walk to a station + wait + ride (+ transfers) + walk from the arrival station, found with Dijkstra's algorithm on both networks, live in your browser.</li>
 <li>Default assumptions, adjustable under Reach: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li>
 <li>Coverage zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li>
@@ -181,7 +183,7 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 <h3>Limits</h3><ul>
 <li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>
 <li>Where OpenStreetMap lacks footpaths or includes private compounds, walking times can be over- or underestimated. Crossings depend on how traffic lights and pedestrian crossings are mapped in OpenStreetMap: a missing crossing makes a road look impassable.</li>
-<li>Each station is a single point; entrances are not modelled. WorldPop figures are modelled estimates, not a census.</li></ul>
+<li>Entrances are approximated: a station can be reached from any street within 100 m of it, on every side of the avenue, so the station itself works as a crossing. WorldPop figures are modelled estimates, not a census.</li></ul>
 <h3>Sources</h3><ul>
 <li>Metro lines, stations and streets: © OpenStreetMap contributors (ODbL)</li>
 <li>Population: WorldPop 2024 (CC BY 4.0)</li>
@@ -190,7 +192,7 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un projet de ${AUTH}</p>
 <p>Une carte, trois questions. <b>Portée</b> : depuis n'importe quel point, jusqu'où peut-on aller à pied, ou à pied et en métro ? <b>Couverture</b> : jusqu'où peut-on marcher depuis chacune des 83 stations, et combien d'habitants vivent à portée ? <b>Passerelles</b> : où une passerelle piétonne rapprocherait-elle le plus d'habitants du métro ?</p>
 <h3>Méthode</h3><ul>
-<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains). Les passerelles et souterrains piétons cartographiés dans OpenStreetMap sont reliés aux rues les plus proches. Les petits morceaux isolés (moins de 50 points) sont écartés. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
+<li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains). Les grandes avenues ont un trottoir de chaque côté : on peut les longer, mais pas les traverser ailleurs. Les passerelles et souterrains piétons cartographiés dans OpenStreetMap sont reliés au trottoir ou à la rue la plus proche. Les petits morceaux isolés (moins de 50 points) sont écartés. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
 <li>Le réseau de métro est construit à partir des 6 lignes et 83 stations d'OpenStreetMap. Temps de porte à porte = marche jusqu'à une station + attente + trajet (+ correspondances) + marche depuis la station d'arrivée, calculé avec l'algorithme de Dijkstra sur les deux réseaux, en direct dans ton navigateur.</li>
 <li>Hypothèses par défaut, réglables dans Portée : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li>
 <li>Les zones de Couverture utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li>
@@ -198,7 +200,7 @@ const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un pr
 <h3>Limites</h3><ul>
 <li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>
 <li>Là où OpenStreetMap manque de cheminements piétons ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. Les traversées dépendent des feux et passages piétons cartographiés dans OpenStreetMap : un passage manquant rend une avenue infranchissable sur la carte.</li>
-<li>Chaque station est un point unique ; les bouches de métro ne sont pas modélisées. Les chiffres WorldPop sont des estimations modélisées, pas un recensement.</li></ul>
+<li>Les bouches de métro sont approchées : une station est accessible depuis toute rue à moins de 100 m, de chaque côté de l'avenue, si bien que la station sert elle-même de traversée. Les chiffres WorldPop sont des estimations modélisées, pas un recensement.</li></ul>
 <h3>Sources</h3><ul>
 <li>Lignes, stations et rues : © contributeurs OpenStreetMap (ODbL)</li>
 <li>Population : WorldPop 2024 (CC BY 4.0)</li>
@@ -248,6 +250,8 @@ const T = {
   bEx:d => 'Nearest footbridge or underpass already mapped: ' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') + '.',
   bCut:'Most of these people are more than 30 min from a station today, because the road cuts their district off on the map. Check on the satellite view: a crossing may exist but be missing in OpenStreetMap.',
   bShort:'Short span: a signal-controlled pedestrian crossing could do the same job.',
+  bNear:(n, d) => 'Nearest station: ' + n + ' (' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') + ' away).',
+  bExLeg:['Mapped, in the walking network', 'Mapped, not connected to any street'],
   bBack:'All sites', bExL:'Show footbridges and underpasses already mapped',
   bExT:s => s === 'unlinkable' ? 'Mapped in OpenStreetMap, not connected to any street (ignored)' : 'Mapped in OpenStreetMap, in the walking network',
   bLeg:'Minutes saved to reach the nearest station', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
@@ -297,6 +301,8 @@ const T = {
   bEx:d => 'Passerelle ou souterrain déjà cartographié le plus proche : ' + (d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : d + ' m') + '.',
   bCut:"La plupart de ces habitants sont aujourd'hui à plus de 30 min d'une station, parce que la voie coupe leur quartier sur la carte. À vérifier sur la vue satellite : une traversée existe peut-être mais manque dans OpenStreetMap.",
   bShort:'Portée courte : un passage piéton à feux pourrait jouer le même rôle.',
+  bNear:(n, d) => 'Station la plus proche : ' + n + ' (à ' + (d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : d + ' m') + ').',
+  bExLeg:['Cartographié, dans le réseau piéton', 'Cartographié, relié à aucune rue'],
   bBack:'Tous les sites', bExL:'Afficher les passerelles et souterrains déjà cartographiés',
   bExT:s => s === 'unlinkable' ? "Cartographié dans OpenStreetMap, relié à aucune rue (ignoré)" : 'Cartographié dans OpenStreetMap, dans le réseau piéton',
   bLeg:"Minutes gagnées pour rejoindre la station la plus proche", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
@@ -409,7 +415,7 @@ function solve(ox, oy) {
   if (!o) return {ox, oy, o:null, w:S.map(() => Infinity), E:S.map(() => Infinity), T:null};
   const cap = P.summer ? P.cap : Infinity;
   const DA = walkDijkstra(srcOf(o, 0), WN.DA, 60, cap);
-  const w = S.map(s => { const t = tSnap(s.sp, DA, o); return t <= cap ? t : Infinity; });
+  const w = S.map(s => { const t = Math.min(...s.sps.map(sp => tSnap(sp, DA, o))); return t <= cap ? t : Infinity; });
   if (P.only) return {ox, oy, o, w, E:S.map(() => Infinity), T:DA};
   const d = new Float64Array(n).fill(Infinity), done = new Uint8Array(n);
   for (let k = 0; k < n; k++) d[k] = w[NODE[k]] + P.wait;
@@ -422,7 +428,7 @@ function solve(ox, oy) {
   }
   const E = S.map(s => s.nodes.length ? Math.min(...s.nodes.map(k => d[k])) : Infinity);
   // keep walking from the origin and from every station at its arrival time
-  const src = srcOf(o, 0); S.forEach((s, i) => { if (s.sp && E[i] < 60) src.push(...srcOf(s.sp, E[i])); });
+  const src = srcOf(o, 0); S.forEach((s, i) => { if (E[i] < 60) s.sps.forEach(sp => src.push(...srcOf(sp, E[i]))); });
   const T = walkDijkstra(src, WN.DB, 60, cap);
   return {ox, oy, o, w, E, T};
 }
@@ -443,7 +449,7 @@ const BASES = {
     L.tileLayer(ESRI + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxNativeZoom:18, maxZoom:18, pane:'labels'})]),
   osm: L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:18, attribution:'&copy; OpenStreetMap contributors'})
 };
-let base0 = 'plan'; BASES.plan.addTo(map);
+let base0 = 'osm'; BASES.osm.addTo(map);
 const BaseCtl = L.Control.extend({options:{position:'topright'}, onAdd() {
   const d = L.DomUtil.create('div', 'basectl'); L.DomEvent.disableClickPropagation(d);
   ['plan', 'sat', 'osm'].forEach(k => { const b = L.DomUtil.create('button', '', d); b.type = 'button'; b.dataset.b = k; b.setAttribute('aria-pressed', k === base0);
@@ -693,7 +699,7 @@ function loadBrg() {
   return BRG.p;
 }
 function clearBrg() { [BRG.layer, BRG.exLayer].forEach(l => { if (l) map.removeLayer(l); }); BRG.layer = BRG.exLayer = null; }
-const roadOf = p => (p.road && p.road !== '—' ? p.road : '') || T[lang].rcN[p.road_class] || p.road_class;
+const roadOf = p => { const n = (lang === 'fr' ? p.name_fr : p.name_en) || T[lang].rcN[p.road_class] || p.road_class; return n.charAt(0).toUpperCase() + n.slice(1); };
 function drawBrg(fit) {
   clearBrg();
   const g = L.layerGroup(), cur = BRG.cur;
@@ -711,8 +717,8 @@ function drawBrg(fit) {
   });
   BRG.layer = g.addTo(map);
   if ($('bex').checked) {
-    BRG.exLayer = L.geoJSON(BRG.ex, {pane:'stations', pointToLayer: (f, ll) => L.circleMarker(ll, {radius:4, weight:1.5, color:'#16222b',
-      fillColor: f.properties.status === 'unlinkable' ? '#fff' : '#5d6b75', fillOpacity:1}),
+    BRG.exLayer = L.geoJSON(BRG.ex, {pane:'stations', pointToLayer: (f, ll) => L.marker(ll, {keyboard:false,
+      icon:L.divIcon({className:'exb' + (f.properties.status === 'unlinkable' ? ' off' : ''), iconSize:[11, 11]})}),
       onEachFeature: (f, l) => l.bindTooltip(() => tr('bExT')(f.properties.status))}).addTo(map);
   }
   if (fit) {
@@ -747,7 +753,7 @@ function showBrg() {
     const h = document.createElement('div'); h.style.fontWeight = 600; h.textContent = '#' + p.rank + ' · '; const r = document.createElement('bdi'); r.textContent = roadOf(p); h.appendChild(r); d.appendChild(h);
     add(d, 'big', fmt(p.people)); add(d, 'lead', tr('bBig'));
     [tr('bGain')(p.gain_avg_min, p.gain_max_min), tr('bNew')(p.newly_10min, p.newly_15min), tr('bSpan')(p.span_m, T[lang].rc[p.road_class] || p.road_class),
-     tr('bDet')(p.detour_m), tr('bEx')(p.existing_crossing_m)].forEach(t => { const q = document.createElement('p'); q.textContent = t; d.appendChild(q); });
+     tr('bNear')(p.near_station, p.near_station_m), tr('bDet')(p.detour_m), tr('bEx')(p.existing_crossing_m)].forEach(t => { const q = document.createElement('p'); q.textContent = t; d.appendChild(q); });
     if (p.kind === 'reconnexion') add(d, 'flag', tr('bCut'));
     if (p.span_m < 40) add(d, 'flag', tr('bShort'));
     const b = document.createElement('button'); b.id = 'bback'; b.type = 'button'; b.textContent = '← ' + tr('bBack');
@@ -758,9 +764,13 @@ function showBrg() {
     const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw"></span><span></span>';
     r.children[0].style.background = GAIN_C[k]; r.children[1].textContent = t + ' ' + tr('min'); lg.appendChild(r);
   });
+  if ($('bex').checked) tr('bExLeg').forEach((t, i) => {
+    const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span style="width:22px;display:flex;justify-content:center;flex:none"><i class="exb' + (i ? ' off' : '') + '" style="display:block;width:11px;height:11px"></i></span><span></span>';
+    r.children[1].textContent = t; lg.appendChild(r);
+  });
 }
 function pickBrg(rank) { BRG.cur = rank; showBrg(); drawBrg(true); }
-$('bex').addEventListener('change', () => drawBrg(false));
+$('bex').addEventListener('change', () => { drawBrg(false); showBrg(); });
 
 /* ================= TABS ================= */
 function setTab(t, keepUrl) {
@@ -828,7 +838,12 @@ $('out').textContent = tr('loading');
 Promise.all(['network.json', 'lignes.geojson', 'walk_graph.json'].map(getJSON))
 .then(([net, lines, wg]) => {
   setup(net); buildWalk(wg);
-  S.forEach(s => { s.sp = snap(s.m[0], s.m[1], 1000); });
+  // station access: streets on every side within 100 m (precomputed in network.json as [lon, lat, metres from the station])
+  S.forEach(s => {
+    const acc = s.acc && s.acc.length ? s.acc : [[s.x, s.y, null]];
+    s.sps = acc.map(a => { const m = toM(a[1], a[0]), sp = snap(m[0], m[1], a[2] == null ? 1000 : 30); if (sp && a[2] != null) sp.d = a[2]; return sp; }).filter(Boolean);
+    s.sp = s.sps[0];
+  });
   L.geoJSON(lines, {pane:'lines', style:{color:'#fff', weight:7, opacity:.9}}).addTo(map);
   L.geoJSON(lines, {pane:'lines', style: f => ({color: LINE_COLORS[String(f.properties.lines || '').split('|')[0].trim()] || '#666', weight:4, opacity:.95})}).addTo(map);
   S.forEach(s => {
