@@ -461,7 +461,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '24';   // bump after each data update so browsers reload the files
+const V = '25';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -760,6 +760,7 @@ function showBrg() {
     [tr('bGain')(p.gain_avg_min, p.gain_max_min), tr('bNew')(p.newly_10min, p.newly_15min), tr('bSpan')(p.span_m, T[lang].rc[p.road_class] || p.road_class),
      tr('bNear')(p.near_station, p.near_station_m), tr('bDet')(p.detour_m), tr('bEx')(p.existing_crossing_m)].forEach(t => { const q = document.createElement('p'); q.textContent = t; d.appendChild(q); });
     if (p.kind === 'reconnexion') add(d, 'flag', tr('bCut'));
+    if (p['note_' + lang]) add(d, 'flag', p['note_' + lang]);
     if (p.span_m < 40) add(d, 'flag', tr('bShort'));
     const b = document.createElement('button'); b.id = 'bback'; b.type = 'button'; b.textContent = '← ' + tr('bBack');
     b.addEventListener('click', () => pickBrg(null)); d.appendChild(b);
