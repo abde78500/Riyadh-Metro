@@ -91,7 +91,7 @@ const RGB = BANDS.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
 const T = {
  en:{title:'Metro time map', sub:'Riyadh: how long it takes to get anywhere from a start point, walking and riding the metro.',
   lnk:'← Walking zones and population by station', follow:'Follow the mouse', following:'Following: click the map to freeze', only:'Walking only (no metro)',
-  hint:'Click the map to set the start point, or follow the mouse. When the start is frozen, hover the map to read travel times.',
+  hint:'Move the mouse over the map: the start point follows it. Click to freeze it, then hover to read travel times.',
   set:'Assumptions', speed:'Metro commercial speed', wait:'Wait for a train', transfer:'Transfer between lines', walk:'Walking speed',
   kmh:'km/h', min:'min', leg:'Travel time from the start point (minutes)', near:'Nearest station', walkmin:'min on foot',
   stn:'stations within 30 min', stn60:'within 60 min', over:'60+ min',
@@ -99,7 +99,7 @@ const T = {
   err:'Could not load ', err2:'. Check that network.json and lignes.geojson sit next to this page and open it from a web server such as GitHub Pages.', toggle:'Français', tabM:'Metro time', tabW:'Walking reach', new:'+ population', info:'About: sources and method', credit:'Map by KHAMASSI Abderrahmane · ', creditMore:'sources & method', about:"<h2 id=\"ab_t\">About this map</h2><p class=\"by\">A project by KHAMASSI Abderrahmane</p>\n<p>Pick a start point (click the map or a station) to see how long it takes to reach every part of Riyadh by walking and riding the metro. The companion <a href=\"pied.html\">walking map</a> shows how far you can walk from each station and how many people live within reach.</p>\n<h3>Method</h3><ul>\n<li>The network is built from the 6 lines and 83 stations mapped in OpenStreetMap, with the distance between consecutive stations along each line.</li>\n<li>Travel time = walk to a station + wait for a train + ride (+ transfers) + walk from the arrival station. The fastest combination is found with Dijkstra's algorithm, computed live in your browser.</li>\n<li>Default assumptions, adjustable in the panel: walking 4.8 km/h, measured in a straight line plus 30% for detours; metro commercial speed 40 km/h; 3 min wait (headways of 3\u20135 min at peak, 5\u201310 min off-peak); 5 min per transfer.</li></ul>\n<h3>Limits</h3><ul>\n<li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>\n<li>Walking uses a straight line with a fixed detour factor; motorways, walls and compounds can make real walks much longer.</li>\n<li>Each station is a single point; entrances are not modelled.</li></ul>\n<h3>Sources</h3><ul>\n<li>Metro lines and stations: \u00a9 OpenStreetMap contributors (ODbL)</li>\n<li>Population (walking map): WorldPop 2024 (CC BY 4.0)</li>\n<li>Basemap: Esri World Light Gray Canvas</li>\n<li>Tools: ArcGIS Pro, Python, Leaflet</li></ul>"},
  fr:{title:'Carte des temps en métro', sub:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
   lnk:'← Zones de marche et population par station', follow:'Suivre la souris', following:'Suivi actif : clique sur la carte pour figer', only:'À pied seulement (sans métro)',
-  hint:"Clique sur la carte pour placer le départ, ou suis la souris. Une fois le départ figé, survole la carte pour lire les temps de trajet.",
+  hint:"Déplace la souris sur la carte : le point de départ la suit. Clique pour le figer, puis survole la carte pour lire les temps de trajet.",
   set:'Hypothèses', speed:'Vitesse commerciale du métro', wait:'Attente du train', transfer:'Correspondance entre lignes', walk:'Vitesse de marche',
   kmh:'km/h', min:'min', leg:'Temps de trajet depuis le départ (minutes)', near:'Station la plus proche', walkmin:'min à pied',
   stn:'stations à moins de 30 min', stn60:'à moins de 60 min', over:'60+ min',
@@ -162,7 +162,7 @@ const cv = document.createElement('canvas'), small = document.createElement('can
 cv.className = 'tm'; map.getPane('time').appendChild(cv);
 const tip = document.createElement('div'); tip.id = 'tip'; map.getContainer().appendChild(tip);
 
-let origin = null, sol = null, grid = null, follow = false, raf = 0, om = null;
+let origin = null, sol = null, grid = null, follow = true, raf = 0, om = null;
 function refreshGrid() {
   if (!S.length) return;
   const sz = map.getSize(), cols = Math.ceil(sz.x / CELL), rows = Math.ceil(sz.y / CELL);
