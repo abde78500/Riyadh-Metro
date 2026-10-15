@@ -179,7 +179,7 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 <li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap. Door-to-door time = walk to a station + wait + ride (+ transfers) + walk from the arrival station, found with Dijkstra's algorithm on both networks, live in your browser.</li>
 <li>Default assumptions, adjustable under Travel time: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li>
 <li>The People served zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li>
-<li>Footbridges: every pair of street points less than 120 m apart on either side of a motorway, expressway or major avenue is tested as a new link (span + 1 min for stairs or lifts). For each one, walking times to the nearest station are recomputed on the same network, and only people who end up within 15 min of a station and save at least 2 min are counted (someone with no route today counts as 60 min). The 15 sites are picked one after another, each taking the previous ones into account, at least 500 m apart and more than 150 m from any footbridge or underpass already mapped in OpenStreetMap. Mapped footbridges that were missing from the network were added first.</li></ul>
+<li>Footbridges: every 50 m along each motorway, expressway and major avenue, a straight footbridge is tested across the road, perpendicular to it, from the first street on one side to the first street on the other (span + 1 min for stairs or lifts). Sites closer than 150 m to a station (the station already crosses the avenue) or to a footbridge or underpass mapped in OpenStreetMap are left out. For each one, walking times to the nearest station are recomputed on the same network, and the people counted are those who come within 15 min on foot of a station thanks to it (WorldPop, 50 m grid, as in People served). Sites are picked one after another, each taking the previous ones into account, at least 500 m apart, and kept only if they bring at least 1,500 people within 15 min.</li></ul>
 <h3>Limits</h3><ul>
 <li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>
 <li>Where OpenStreetMap lacks footpaths or includes private compounds, walking times can be over- or underestimated. Crossings depend on how traffic lights and pedestrian crossings are mapped in OpenStreetMap: a missing crossing makes a road look impassable.</li>
@@ -196,7 +196,7 @@ const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un pr
 <li>Le réseau de métro est construit à partir des 6 lignes et 83 stations d'OpenStreetMap. Temps de porte à porte = marche jusqu'à une station + attente + trajet (+ correspondances) + marche depuis la station d'arrivée, calculé avec l'algorithme de Dijkstra sur les deux réseaux, en direct dans ton navigateur.</li>
 <li>Hypothèses par défaut, réglables dans Temps de trajet : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li>
 <li>Les zones d'Habitants desservis utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li>
-<li>Passerelles : chaque paire de points de rue à moins de 120 m l'un de l'autre, de part et d'autre d'une autoroute, voie rapide ou grande avenue, est testée comme un nouveau lien (portée + 1 min pour les escaliers ou ascenseurs). Pour chacune, les temps de marche jusqu'à la station la plus proche sont recalculés sur le même réseau, en ne comptant que les habitants qui arrivent à moins de 15 min d'une station et gagnent au moins 2 min (une personne sans itinéraire aujourd'hui compte pour 60 min). Les 15 sites sont choisis l'un après l'autre en tenant compte des précédents, à au moins 500 m les uns des autres et à plus de 150 m de toute passerelle ou tout souterrain déjà cartographié dans OpenStreetMap. Les passerelles cartographiées absentes du réseau y ont d'abord été ajoutées.</li></ul>
+<li>Passerelles : tous les 50 m le long de chaque autoroute, voie rapide et grande avenue, une passerelle droite est testée au-dessus de la route, perpendiculairement, de la première rue d'un côté à la première rue de l'autre (portée + 1 min pour les escaliers ou ascenseurs). Les sites à moins de 150 m d'une station (la station traverse déjà l'avenue) ou d'une passerelle ou d'un souterrain cartographié dans OpenStreetMap sont écartés. Pour chacune, les temps de marche jusqu'à la station la plus proche sont recalculés sur le même réseau, et l'on compte les habitants qui arrivent grâce à elle à moins de 15 min à pied d'une station (WorldPop, grille de 50 m, comme dans Habitants desservis). Les sites sont choisis l'un après l'autre en tenant compte des précédents, à au moins 500 m les uns des autres, et gardés seulement s'ils amènent au moins 1 500 habitants à moins de 15 min.</li></ul>
 <h3>Limites</h3><ul>
 <li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>
 <li>Là où OpenStreetMap manque de cheminements piétons ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. Les traversées dépendent des feux et passages piétons cartographiés dans OpenStreetMap : un passage manquant rend une avenue infranchissable sur la carte.</li>
@@ -240,12 +240,12 @@ const T = {
   subB:'Riyadh: where a pedestrian bridge would bring the most people closer to the metro on foot.',
   loadingB:'Loading the footbridge analysis…', err2b:'. Check that passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson and passerelles_stats.json sit next to this page.',
   bSum:(n, k) => [cmp(n), 'more people within 15 min on foot of a station with these ' + k + ' footbridges.'],
-  bSum2:(a, b) => cmp(a) + ' more within 10 min · ' + cmp(b) + ' people in all would reach a station faster, within 15 min.',
+  bSum2:(a, b) => cmp(a) + ' more within 10 min.',
   bHead:['Site', 'People', 'Time saved'], bAvg:'min',
-  bIntro:'For each site: how many people would reach a station within 15 min and faster than today, and how many minutes they would save on average. Click a site to see where they live.',
-  bBig:'people reach a station faster',
+  bIntro:'For each site: how many people would come within 15 min on foot of a station thanks to the footbridge, and how many minutes they would save on average. Click a site to see where they live.',
+  bBig:'people come within 15 min on foot of a station',
   bGain:(a, m) => 'They save ' + a + ' min on average (up to ' + m + ' min).',
-  bNew:(a, b) => fmt(a) + ' people come within 10 min of a station, ' + fmt(b) + ' within 15 min.',
+  bNew:(a, b) => fmt(a) + ' of them within 10 min.',
   bSpan:(s, c) => 'Span about ' + s + ' m, over ' + c + '.',
   bDet:d => d == null ? 'Today the network finds no walking route between the two ends.' : 'Today, walking from one end to the other takes a ' + (d / 1000).toFixed(1) + ' km detour.',
   bEx:d => 'Nearest footbridge or underpass already mapped: ' + (d >= 1000 ? (d / 1000).toFixed(1) + ' km' : d + ' m') + '.',
@@ -255,10 +255,10 @@ const T = {
   bExLeg:['Mapped, in the walking network', 'Mapped, not connected to any street'],
   bBack:'All sites', bExL:'Show footbridges and underpasses already mapped',
   bExT:s => s === 'unlinkable' ? 'Mapped in OpenStreetMap, not connected to any street (ignored)' : 'Mapped in OpenStreetMap, in the walking network',
-  bLeg:'Green areas, along the streets: where people would reach a station faster with the footbridge (within 15 min). Darker = more minutes saved.', bZone:(g, n) => g + ' min saved · ' + fmt(n) + ' people',
+  bLeg:'Area that comes within 15 min on foot of a station with the footbridge', bZone:(g, n) => fmt(n) + ' people come within 15 min',
   rcN:{motorway:'Expressway', trunk:'Expressway', motorway_link:'Expressway ramp', trunk_link:'Expressway ramp', primary:'Major avenue'},
   rc:{motorway:'an expressway', trunk:'an expressway', motorway_link:'an expressway ramp', trunk_link:'an expressway ramp', primary:'a major avenue'},
-  noteB:'Each numbered line is a proposed footbridge; the green areas, drawn along the streets, are where people would reach a station faster, darker for bigger gains. People are counted from the WorldPop 100 m grid. Sites are ranked by the walking time saved by people who end up within 15 min of a station (saving at least 2 min), at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
+  noteB:'Each numbered line is a proposed footbridge, straight across the road. The green area is the part of the district that comes within 15 min on foot of a station thanks to it. Sites are ranked by the number of people in that area (WorldPop, 50 m grid), at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
  fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
   tabR:'Temps de trajet', tabRs:'depuis un point', tabC:'Habitants desservis', tabCs:'à pied des stations',
   subR:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
@@ -292,12 +292,12 @@ const T = {
   subB:"Riyadh : où une passerelle piétonne rapprocherait le plus d'habitants du métro à pied.",
   loadingB:"Chargement de l'analyse des passerelles…", err2b:'. Vérifie que passerelles.geojson, passerelles_gain.geojson, passerelles_existantes.geojson et passerelles_stats.json sont à côté de cette page.',
   bSum:(n, k) => [cmp(n), "habitants de plus à moins de 15 min à pied d'une station avec ces " + k + ' passerelles.'],
-  bSum2:(a, b) => cmp(a) + ' de plus à moins de 10 min · ' + cmp(b) + ' habitants au total rejoindraient une station plus vite, en moins de 15 min.',
+  bSum2:(a, b) => cmp(a) + ' de plus à moins de 10 min.',
   bHead:['Site', 'Habitants', 'Temps gagné'], bAvg:'min',
-  bIntro:"Pour chaque site : combien d'habitants rejoindraient une station en moins de 15 min et plus vite qu'aujourd'hui, et combien de minutes ils gagneraient en moyenne. Clique un site pour voir où ils habitent.",
-  bBig:'habitants rejoignent une station plus vite',
+  bIntro:"Pour chaque site : combien d'habitants arriveraient grâce à la passerelle à moins de 15 min à pied d'une station, et combien de minutes ils gagneraient en moyenne. Clique un site pour voir où ils habitent.",
+  bBig:"habitants arrivent à moins de 15 min à pied d'une station",
   bGain:(a, m) => 'Ils gagnent ' + String(a).replace('.', ',') + ' min en moyenne (jusqu\'à ' + String(m).replace('.', ',') + ' min).',
-  bNew:(a, b) => fmt(a) + " habitants passent à moins de 10 min d'une station, " + fmt(b) + ' à moins de 15 min.',
+  bNew:(a, b) => fmt(a) + ' d\'entre eux à moins de 10 min.',
   bSpan:(s, c) => 'Portée d\'environ ' + s + ' m, au-dessus ' + c + '.',
   bDet:d => d == null ? "Aujourd'hui, le réseau ne trouve aucun itinéraire à pied entre les deux extrémités." : "Aujourd'hui, aller à pied d'une extrémité à l'autre impose un détour de " + (d / 1000).toFixed(1).replace('.', ',') + ' km.',
   bEx:d => 'Passerelle ou souterrain déjà cartographié le plus proche : ' + (d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : d + ' m') + '.',
@@ -307,10 +307,10 @@ const T = {
   bExLeg:['Cartographié, dans le réseau piéton', 'Cartographié, relié à aucune rue'],
   bBack:'Tous les sites', bExL:'Afficher les passerelles et souterrains déjà cartographiés',
   bExT:s => s === 'unlinkable' ? "Cartographié dans OpenStreetMap, relié à aucune rue (ignoré)" : 'Cartographié dans OpenStreetMap, dans le réseau piéton',
-  bLeg:"Zones vertes, le long des rues : où les habitants rejoindraient une station plus vite grâce à la passerelle (en moins de 15 min). Plus c'est foncé, plus ils gagnent de minutes.", bZone:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
+  bLeg:"Zone qui passe à moins de 15 min à pied d'une station grâce à la passerelle", bZone:(g, n) => fmt(n) + ' habitants passent sous 15 min', bZoneX:(g, n) => g + ' min gagnées · ' + fmt(n) + ' habitants',
   rcN:{motorway:'Voie rapide', trunk:'Voie rapide', motorway_link:'Bretelle de voie rapide', trunk_link:'Bretelle de voie rapide', primary:'Grande avenue'},
   rc:{motorway:"d'une voie rapide", trunk:"d'une voie rapide", motorway_link:"d'une bretelle de voie rapide", trunk_link:"d'une bretelle de voie rapide", primary:"d'une grande avenue"},
-  noteB:"Chaque trait numéroté est une passerelle proposée ; les zones vertes, tracées le long des rues, montrent où les habitants rejoindraient une station plus vite, plus foncé pour les plus gros gains. Les habitants sont comptés avec la grille WorldPop de 100 m. Les sites sont classés selon le temps de marche gagné par les habitants qui arrivent à moins de 15 min d'une station (au moins 2 min gagnées), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
+  noteB:"Chaque trait numéroté est une passerelle proposée, droite au-dessus de la route. La zone verte est la partie du quartier qui passe grâce à elle à moins de 15 min à pied d'une station. Les sites sont classés selon le nombre d'habitants de cette zone (WorldPop, grille de 50 m), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
 };
 let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
@@ -461,7 +461,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '25';   // bump after each data update so browsers reload the files
+const V = '26';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -708,7 +708,7 @@ function drawBrg(fit) {
   const g = L.layerGroup(), cur = BRG.cur;
   const zf = BRG.zones.features.filter(f => cur == null || f.properties.rank === cur);
   L.geoJSON(zf, {pane:'iso',
-    style: f => ({color:GAIN_C[f.properties.gain_lo], weight:.6, opacity:.9, fillColor:GAIN_C[f.properties.gain_lo], fillOpacity:.62}),
+    style: {color:'#23703a', weight:1.2, opacity:.9, fillColor:'#3e9a46', fillOpacity:.5},
     onEachFeature: (f, l) => l.bindTooltip(() => '#' + f.properties.rank + ' · ' + tr('bZone')(f.properties.gain_min, f.properties.people), {sticky:true})}).addTo(g);
   BRG.br.features.forEach(f => {
     const p = f.properties, on = cur == null || cur === p.rank, ll = f.geometry.coordinates.map(c => [c[1], c[0]]);
@@ -766,10 +766,8 @@ function showBrg() {
     b.addEventListener('click', () => pickBrg(null)); d.appendChild(b);
   }
   const lg = $('bleg'); lg.innerHTML = ''; const lp = document.createElement('p'); lp.textContent = tr('bLeg'); lg.appendChild(lp);
-  [[2, '2–4'], [5, '5–9'], [10, '10–19'], [20, '20+']].forEach(([k, t]) => {
-    const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw"></span><span></span>';
-    r.children[0].style.background = GAIN_C[k]; r.children[1].textContent = t + ' ' + tr('min'); lg.appendChild(r);
-  });
+  { const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span class="sw" style="background:rgba(62,154,70,.5);border-color:#23703a"></span><span></span>';
+    r.children[1].textContent = '15 min'; lg.appendChild(r); }
   if ($('bex').checked) tr('bExLeg').forEach((t, i) => {
     const r = document.createElement('div'); r.className = 'row'; r.innerHTML = '<span style="width:22px;display:flex;justify-content:center;flex:none"><i class="exb' + (i ? ' off' : '') + '" style="display:block;width:11px;height:11px"></i></span><span></span>';
     r.children[1].textContent = t; lg.appendChild(r);
