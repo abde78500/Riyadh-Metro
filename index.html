@@ -124,12 +124,30 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 .exb{background:#0f766e;border:2px solid #fff;border-radius:2px;box-sizing:border-box;box-shadow:0 0 0 1px #0f766e,0 1px 3px rgba(0,0,0,.35)}
 .exb.off{background:#fff;border-color:#0f766e;box-shadow:none}
 .bnum.on{background:var(--acc);transform:scale(1.25)}
+/* ===== phones only (desktop unchanged) ===== */
+#grab{display:none}
+@media (max-width:640px){
+  #panel{top:auto;left:0;right:0;bottom:0;width:100%;max-width:100%;max-height:60vh;border-radius:14px 14px 0 0;border-width:1px 0 0;padding:4px 14px 14px;font-size:13px;box-shadow:0 -4px 18px rgba(22,34,43,.22);transition:max-height .2s}
+  #panel.collapsed{max-height:164px;overflow:hidden}
+  #grab{display:flex;justify-content:center;align-items:center;width:100%;height:22px;margin:0 0 2px;border:0;background:none;padding:0}
+  #grab span{display:block;width:44px;height:5px;border-radius:3px;background:#c9c3b8}
+  h1{font-size:17px}
+  .sub{font-size:12px;margin:0 0 8px}
+  .tabs{margin:0 0 8px}
+  .tabs button{padding:6px 4px}
+  .tabs button b{font-size:12.5px}
+  .tabs button small{font-size:10px}
+  #stat .big,#bsum .big,#bdet .big{font-size:24px}
+  .leaflet-bottom.leaflet-right{bottom:164px}
+  .leaflet-top.leaflet-right{top:4px}
+}
 #closeb{position:absolute;top:10px;right:10px;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);border-radius:4px}
 </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="panel">
+  <button id="grab" type="button" aria-label="Show / hide the panel"><span></span></button>
   <div class="top"><h1 id="t1"></h1><div class="tools"><button id="infob" type="button" aria-haspopup="dialog">i</button><button id="lang" type="button"></button></div></div>
   <p class="sub" id="sub"></p>
   <div class="tabs" role="tablist">
@@ -180,8 +198,9 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 <li>Walking follows the real pedestrian network built from OpenStreetMap streets and paths (motorways, expressways and major avenues treated as barriers, crossable only at traffic lights, pedestrian crossings, bridges or underpasses). Major avenues have a sidewalk on each side: you can walk along them, but not cross them elsewhere. Footbridges and pedestrian underpasses mapped in OpenStreetMap are linked to the nearest sidewalk or street. Small isolated pieces (under 50 points) are dropped. Each point is attached to the nearest street; areas more than 200 m from any street are left blank.</li>
 <li>The metro network is built from the 6 lines and 83 stations mapped in OpenStreetMap. Door-to-door time = walk to a station + wait + ride (+ transfers) + walk from the arrival station, found with Dijkstra's algorithm on both networks, live in your browser.</li>
 <li>Default assumptions, adjustable under Travel time: walking 4.8 km/h; metro commercial speed 40 km/h; 3 min wait (headways of 3–5 min at peak, 5–10 min off-peak); 5 min per transfer.</li>
+<li>Summer mode: at 45 °C nobody walks far, so each walk to or from the metro is capped (10 min by default, adjustable); places beyond that cap are shown as out of reach.</li>
 <li>The People served zones use the same network and rules, precomputed at 4.8 km/h. Population is summed from the WorldPop 2024 grid (100 m); in the all-stations view, people within reach of several stations are counted once.</li>
-<li>Footbridges: every 50 m along each motorway, expressway and major avenue, a straight footbridge is tested across the road, perpendicular to it, from the first street on one side to the first street on the other (span + 1 min for stairs or lifts). Sites closer than 150 m to a station (the station already crosses the avenue) or to a footbridge or underpass mapped in OpenStreetMap are left out. For each one, walking times to the nearest station are recomputed on the same network, and the people counted are those who come within 15 min on foot of a station thanks to it (WorldPop, 50 m grid, as in People served). Sites are picked one after another, each taking the previous ones into account, at least 500 m apart, and kept only if they bring at least 1,500 people within 15 min. After checking the satellite view, two sites where a crossing already exists and one construction site counted as inhabited were removed. The green area only covers inhabited 50 m cells, without the roads themselves. Sites are chosen on the 15 min measure; the 10 and 20 min buttons show the same sites against those thresholds.</li></ul>
+<li>Footbridges: every 50 m along each motorway, expressway and major avenue, a straight footbridge is tested across the road, perpendicular to it, from the first street on one side to the first street on the other (span + 1 min for stairs or lifts). Sites closer than 150 m to a station (the station already crosses the avenue) or to a footbridge or underpass mapped in OpenStreetMap are left out. For each one, walking times to the nearest station are recomputed on the same network, and the people counted are those who come within 15 min on foot of a station thanks to it (WorldPop, 50 m grid, as in People served). Sites are picked one after another, each taking the previous ones into account, at least 500 m apart, and kept only if they bring at least 1,500 people within 15 min. After checking the satellite view, two sites where a crossing already exists and one construction site counted as inhabited were removed. The green area only covers inhabited 50 m cells, without the roads themselves. Sites are chosen on the 15 min measure; the 10 and 20 min buttons show the same sites against those thresholds, and “All 3” overlays the three areas.</li></ul>
 <h3>Limits</h3><ul>
 <li>No timetable, no crowding, no traffic: these are typical times, not a journey planner.</li>
 <li>Where OpenStreetMap lacks footpaths or includes private compounds, walking times can be over- or underestimated. Crossings depend on how traffic lights and pedestrian crossings are mapped in OpenStreetMap: a missing crossing makes a road look impassable.</li>
@@ -189,7 +208,7 @@ const ABOUT_EN = `<h2 id="ab_t">About this map</h2><p class="by">A project by ${
 <h3>Sources</h3><ul>
 <li>Metro lines, stations and streets: © OpenStreetMap contributors (ODbL)</li>
 <li>Population: WorldPop 2024 (CC BY 4.0)</li>
-<li>Basemap: Esri World Light Gray Canvas</li>
+<li>Basemaps: OpenStreetMap (default), Esri World Light Gray Canvas, Esri World Imagery (satellite)</li>
 <li>Tools: ArcGIS Pro, Python, Leaflet</li></ul>`;
 const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un projet de ${AUTH}</p>
 <p>Une carte, trois questions. <b>Temps de trajet</b> : depuis n'importe quel point, jusqu'où peut-on aller à pied, ou à pied et en métro ? <b>Habitants desservis</b> : jusqu'où peut-on marcher depuis chacune des 83 stations, et combien d'habitants vivent à portée ? <b>Passerelles</b> : où une passerelle piétonne rapprocherait-elle le plus d'habitants du métro ?</p>
@@ -197,8 +216,9 @@ const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un pr
 <li>La marche suit le vrai réseau piéton construit à partir des rues et chemins d'OpenStreetMap (autoroutes, voies rapides et grandes avenues traitées comme des barrières, traversables seulement aux feux, passages piétons, passerelles ou souterrains). Les grandes avenues ont un trottoir de chaque côté : on peut les longer, mais pas les traverser ailleurs. Les passerelles et souterrains piétons cartographiés dans OpenStreetMap sont reliés au trottoir ou à la rue la plus proche. Les petits morceaux isolés (moins de 50 points) sont écartés. Chaque point est rattaché à la rue la plus proche ; les zones à plus de 200 m de toute rue restent vides.</li>
 <li>Le réseau de métro est construit à partir des 6 lignes et 83 stations d'OpenStreetMap. Temps de porte à porte = marche jusqu'à une station + attente + trajet (+ correspondances) + marche depuis la station d'arrivée, calculé avec l'algorithme de Dijkstra sur les deux réseaux, en direct dans ton navigateur.</li>
 <li>Hypothèses par défaut, réglables dans Temps de trajet : marche à 4,8 km/h ; vitesse commerciale du métro 40 km/h ; attente de 3 min (intervalles de 3 à 5 min en pointe, 5 à 10 min en creux) ; 5 min par correspondance.</li>
+<li>Mode été : à 45 °C personne ne marche longtemps, donc chaque trajet à pied vers ou depuis le métro est plafonné (10 min par défaut, réglable) ; au-delà, les lieux apparaissent hors de portée.</li>
 <li>Les zones d'Habitants desservis utilisent le même réseau et les mêmes règles, précalculées à 4,8 km/h. La population est la somme de la grille WorldPop 2024 (100 m) ; dans la vue toutes stations, une personne à portée de plusieurs stations n'est comptée qu'une fois.</li>
-<li>Passerelles : tous les 50 m le long de chaque autoroute, voie rapide et grande avenue, une passerelle droite est testée au-dessus de la route, perpendiculairement, de la première rue d'un côté à la première rue de l'autre (portée + 1 min pour les escaliers ou ascenseurs). Les sites à moins de 150 m d'une station (la station traverse déjà l'avenue) ou d'une passerelle ou d'un souterrain cartographié dans OpenStreetMap sont écartés. Pour chacune, les temps de marche jusqu'à la station la plus proche sont recalculés sur le même réseau, et l'on compte les habitants qui arrivent grâce à elle à moins de 15 min à pied d'une station (WorldPop, grille de 50 m, comme dans Habitants desservis). Les sites sont choisis l'un après l'autre en tenant compte des précédents, à au moins 500 m les uns des autres, et gardés seulement s'ils amènent au moins 1 500 habitants à moins de 15 min. Après vérification sur la vue satellite, deux sites où une traversée existe déjà et un terrain en chantier compté comme habité ont été retirés. La zone verte ne couvre que les carrés de 50 m habités, sans la chaussée. Les sites sont choisis sur la mesure à 15 min ; les boutons 10 et 20 min montrent les mêmes sites pour ces seuils.</li></ul>
+<li>Passerelles : tous les 50 m le long de chaque autoroute, voie rapide et grande avenue, une passerelle droite est testée au-dessus de la route, perpendiculairement, de la première rue d'un côté à la première rue de l'autre (portée + 1 min pour les escaliers ou ascenseurs). Les sites à moins de 150 m d'une station (la station traverse déjà l'avenue) ou d'une passerelle ou d'un souterrain cartographié dans OpenStreetMap sont écartés. Pour chacune, les temps de marche jusqu'à la station la plus proche sont recalculés sur le même réseau, et l'on compte les habitants qui arrivent grâce à elle à moins de 15 min à pied d'une station (WorldPop, grille de 50 m, comme dans Habitants desservis). Les sites sont choisis l'un après l'autre en tenant compte des précédents, à au moins 500 m les uns des autres, et gardés seulement s'ils amènent au moins 1 500 habitants à moins de 15 min. Après vérification sur la vue satellite, deux sites où une traversée existe déjà et un terrain en chantier compté comme habité ont été retirés. La zone verte ne couvre que les carrés de 50 m habités, sans la chaussée. Les sites sont choisis sur la mesure à 15 min ; les boutons 10 et 20 min montrent les mêmes sites pour ces seuils, et « Les 3 » superpose les trois zones.</li></ul>
 <h3>Limites</h3><ul>
 <li>Ni horaires, ni affluence, ni trafic : ce sont des temps typiques, pas un calculateur d'itinéraire.</li>
 <li>Là où OpenStreetMap manque de cheminements piétons ou inclut des résidences privées, les temps de marche peuvent être sur- ou sous-estimés. Les traversées dépendent des feux et passages piétons cartographiés dans OpenStreetMap : un passage manquant rend une avenue infranchissable sur la carte.</li>
@@ -206,7 +226,7 @@ const ABOUT_FR = `<h2 id="ab_t">À propos de cette carte</h2><p class="by">Un pr
 <h3>Sources</h3><ul>
 <li>Lignes, stations et rues : © contributeurs OpenStreetMap (ODbL)</li>
 <li>Population : WorldPop 2024 (CC BY 4.0)</li>
-<li>Fond de carte : Esri World Light Gray Canvas</li>
+<li>Fonds de carte : OpenStreetMap (par défaut), Esri World Light Gray Canvas, Esri World Imagery (satellite)</li>
 <li>Outils : ArcGIS Pro, Python, Leaflet</li></ul>`;
 const T = {
  en:{title:'Within metro reach', toggle:'Français', info:'About: sources and method', credit:'Map by ' + AUTH + ' · ', creditMore:'sources & method', about:ABOUT_EN,
@@ -217,6 +237,7 @@ const T = {
   segM:'Walk + metro', segW:'Walk only', follow:'Follow the mouse', following:'Following: click the map to freeze',
   hintM:'Move the mouse over the map: the start point follows it. Click to freeze it, then hover to read travel times.',
   hintW:'Move the mouse over the map: the colours show where you can walk from there. Click to freeze it.',
+  hintTouch:'Tap the map to choose a start point: the colours show the travel time from there. Pull the panel up for details.',
   set:'Assumptions', speed:'Metro commercial speed', wait:'Wait for a train', transfer:'Transfer between lines', walk:'Walking speed', kmh:'km/h', min:'min',
   legR:'Travel time from the start point', legW:'Walking time from the start point', legC:'Walking time from the station (darker = farther)',
   near:'Nearest station', walkmin:'min on foot', stn:'stations within 30 min', stn60:'within 60 min', over:'60+ min',
@@ -262,7 +283,7 @@ const T = {
    bLeg:t => 'Area that comes within ' + t + ' min on foot of a station with the footbridge', bZone:(t, n) => fmt(n) + ' people come within ' + t + ' min',
   rcN:{motorway:'Expressway', trunk:'Expressway', motorway_link:'Expressway ramp', trunk_link:'Expressway ramp', primary:'Major avenue'},
   rc:{motorway:'an expressway', trunk:'an expressway', motorway_link:'an expressway ramp', trunk_link:'an expressway ramp', primary:'a major avenue'},
-  noteB:'Each numbered line is a proposed footbridge, straight across the road. The green area is the part of the district that comes within 15 min on foot of a station thanks to it. Sites are ranked by the number of people in that area (WorldPop, 50 m grid), at 4.8 km/h, on the same street network as the rest of the map. Figures are model estimates: check each site on the satellite view.'},
+  noteB:'Each numbered line is a proposed footbridge, straight across the road. The green area is the part of the district that comes within 10, 15 or 20 min on foot of a station thanks to it (button above the list; with All 3, darker = shorter walk). Sites are ranked on the 15 min measure (WorldPop, 50 m grid), at 4.8 km/h, on the same street network as the rest of the map. Square symbols: footbridges and underpasses already mapped in OpenStreetMap. Figures are model estimates: check each site on the satellite view.'},
  fr:{title:'À portée de métro', toggle:'English', info:'À propos : sources et méthode', credit:'Carte réalisée par ' + AUTH + ' · ', creditMore:'sources et méthode', about:ABOUT_FR,
   tabR:'Temps de trajet', tabRs:'depuis un point', tabC:'Habitants desservis', tabCs:'à pied des stations',
   subR:"Riyadh : le temps pour aller n'importe où depuis un point de départ, à pied et en métro.",
@@ -271,6 +292,7 @@ const T = {
   segM:'À pied + métro', segW:'À pied seulement', follow:'Suivre la souris', following:'Suivi actif : clique sur la carte pour figer',
   hintM:'Déplace la souris sur la carte : le point de départ la suit. Clique pour le figer, puis survole la carte pour lire les temps de trajet.',
   hintW:"Déplace la souris sur la carte : les couleurs montrent jusqu'où tu peux marcher depuis ce point. Clique pour le figer.",
+  hintTouch:"Touche la carte pour choisir un point de départ : les couleurs montrent le temps de trajet depuis ce point. Remonte le panneau pour les détails.",
   set:'Hypothèses', speed:'Vitesse commerciale du métro', wait:'Attente du train', transfer:'Correspondance entre lignes', walk:'Vitesse de marche', kmh:'km/h', min:'min',
   legR:'Temps de trajet depuis le départ', legW:'Temps de marche depuis le départ', legC:'Temps de marche depuis la station (plus foncé = plus loin)',
   near:'Station la plus proche', walkmin:'min à pied', stn:'stations à moins de 30 min', stn60:'à moins de 60 min', over:'60+ min',
@@ -316,7 +338,7 @@ const T = {
    bLeg:t => "Zone qui passe à moins de " + t + " min à pied d'une station grâce à la passerelle", bZone:(t, n) => fmt(n) + ' habitants passent sous ' + t + ' min',
   rcN:{motorway:'Voie rapide', trunk:'Voie rapide', motorway_link:'Bretelle de voie rapide', trunk_link:'Bretelle de voie rapide', primary:'Grande avenue'},
   rc:{motorway:"d'une voie rapide", trunk:"d'une voie rapide", motorway_link:"d'une bretelle de voie rapide", trunk_link:"d'une bretelle de voie rapide", primary:"d'une grande avenue"},
-  noteB:"Chaque trait numéroté est une passerelle proposée, droite au-dessus de la route. La zone verte est la partie du quartier qui passe grâce à elle à moins de 15 min à pied d'une station. Les sites sont classés selon le nombre d'habitants de cette zone (WorldPop, grille de 50 m), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
+  noteB:"Chaque trait numéroté est une passerelle proposée, droite au-dessus de la route. La zone verte est la partie du quartier qui passe grâce à elle à moins de 10, 15 ou 20 min à pied d'une station (bouton au-dessus de la liste ; avec Les 3, plus c'est foncé, plus la marche est courte). Les sites sont classés sur la mesure à 15 min (WorldPop, grille de 50 m), à 4,8 km/h, sur le même réseau de rues que le reste de la carte. Carrés : passerelles et souterrains déjà cartographiés dans OpenStreetMap. Les chiffres sont des estimations du modèle : vérifie chaque site sur la vue satellite."}
 };
 let lang = 'en', tab = 'reach';
 const tr = k => T[lang][k];
@@ -445,6 +467,15 @@ function timeAt(x, y, sol) { return sol && sol.T ? tSnap(snap(x, y, SNAP_GRID), 
 
 /* ================= MAP ================= */
 const map = L.map('map', {zoomControl:false, zoomAnimation:false}).setView([24.71, 46.69], 11);
+/* phones: the panel is a bottom sheet; keep fitted areas above it, tap instead of hover */
+const MOB = window.matchMedia('(max-width: 640px)').matches, TOUCH = window.matchMedia('(pointer: coarse)').matches;
+if (MOB) {
+  const fb = map.fitBounds.bind(map);
+  map.fitBounds = (b, o = {}) => fb(b, Object.assign({}, o, {padding:null, paddingTopLeft:[24, 24], paddingBottomRight:[24, 190]}));
+  const pn = document.getElementById('panel'); pn.classList.add('collapsed');
+  document.getElementById('grab').addEventListener('click', () => { pn.classList.toggle('collapsed'); pn.scrollTop = 0; });
+}
+const sheetDown = () => { if (MOB) { const pn = document.getElementById('panel'); pn.classList.add('collapsed'); pn.scrollTop = 0; } };
 L.control.zoom({position:'topright'}).addTo(map);
 [['iso',350],['time',360],['labels',400],['lines',450],['stations',650]].forEach(([n, z]) => { map.createPane(n).style.zIndex = z; });
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
@@ -467,7 +498,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '29';   // bump after each data update so browsers reload the files
+const V = '31';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
@@ -476,7 +507,7 @@ const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.line
 const cv = document.createElement('canvas'), small = document.createElement('canvas'), ctx = cv.getContext('2d'), sctx = small.getContext('2d');
 cv.className = 'tm'; map.getPane('time').appendChild(cv);
 const tip = document.createElement('div'); tip.id = 'tip'; map.getContainer().appendChild(tip);
-let origin = null, sol = null, grid = null, follow = true, raf = 0, om = null;
+let origin = null, sol = null, grid = null, follow = !TOUCH, raf = 0, om = null;
 
 function refreshGrid() {
   if (tab !== 'reach' || !S.length || !WN) return;
@@ -529,7 +560,7 @@ map.on('mousemove', e => {
   tip.style.left = e.containerPoint.x + 14 + 'px'; tip.style.top = e.containerPoint.y + 14 + 'px'; tip.style.display = 'block';
 });
 map.on('mouseout', () => { tip.style.display = 'none'; });
-map.on('click', e => { if (tab !== 'reach') return; follow = false; setFollow(); origin = e.latlng; paint(); });
+map.on('click', e => { if (tab !== 'reach') return; follow = false; setFollow(); origin = e.latlng; paint(); sheetDown(); });
 $('follow').addEventListener('click', () => { follow = !follow; setFollow(); });
 function setOnly(v) {
   P.only = v; $('segM').setAttribute('aria-pressed', !v); $('segW').setAttribute('aria-pressed', v);
@@ -631,6 +662,7 @@ function showInfoC() {
 const tipF = (f, l) => l.bindTooltip(() => f.properties.station + ' · ' + f.properties.minutes + ' ' + tr('min') + ' ' + tr('walkw') + '<br>' +
   f.properties._a.toFixed(1) + ' km² · ' + pctOf(f.properties._a, f.properties.minutes).toFixed(0) + '% ' + tr('disc') + (f.properties.pop != null ? ' · ' + fmt(f.properties.pop) + ' ' + tr('ppl') : ''), {sticky:true});
 function select(name, keepView) {
+  sheetDown();
   clearCov(); COV.view = 'one'; COV.cur = name; $('sel').value = name; $('wtrow').hidden = true;
   if (markers[name]) markers[name].setStyle({radius:9, fillColor:'#ffd400'});
   const feats = (COV.by[name] || []).filter(f => !P.summer || +f.properties.minutes <= P.cap).sort((a, b) => b.properties.minutes - a.properties.minutes);
@@ -786,7 +818,7 @@ function showBrg() {
     r.children[1].textContent = t; lg.appendChild(r);
   });
 }
-function pickBrg(rank) { BRG.cur = rank; showBrg(); drawBrg(true); }
+function pickBrg(rank) { BRG.cur = rank; showBrg(); drawBrg(true); if (rank != null) sheetDown(); }
 $('bex').addEventListener('change', () => { drawBrg(false); showBrg(); });
 document.querySelectorAll('#bseg button').forEach(b => b.addEventListener('click', () => { BRG.t = b.dataset.t === 'all' ? 'all' : +b.dataset.t; showBrg(); drawBrg(BRG.cur != null); }));
 
@@ -820,7 +852,8 @@ $('tabB').addEventListener('click', () => setTab('brg'));
 /* ================= TEXTS / LANGUAGE ================= */
 function texts() {
   $('sub').textContent = tab === 'brg' ? tr('subB') : tab === 'cov' ? tr('subC') : (P.only ? tr('subW') : tr('subR'));
-  $('hint').textContent = P.only ? tr('hintW') : tr('hintM');
+  $('hint').textContent = TOUCH ? tr('hintTouch') : P.only ? tr('hintW') : tr('hintM');
+  if (TOUCH) $('follow').hidden = true;
   $('note').textContent = tab === 'brg' ? tr('noteB') : tab === 'cov' ? tr('noteC') : tr('noteR');
   $('t_summer').textContent = tr('summer'); $('t_summerS').textContent = tr('summerS')(P.cap);
 }
