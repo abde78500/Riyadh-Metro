@@ -213,24 +213,24 @@
  ],
  "combined": {
   "within_5min": {
-   "before": 103787,
-   "after": 103912
+   "before": 103696,
+   "after": 103735
   },
   "within_10min": {
-   "before": 386906,
-   "after": 391325
+   "before": 388069,
+   "after": 392405
   },
   "within_15min": {
-   "before": 769235,
-   "after": 790363
+   "before": 771681,
+   "after": 792588
   },
   "within_20min": {
-   "before": 1192415,
-   "after": 1231895
+   "before": 1194883,
+   "after": 1233874
   },
   "within_30min": {
-   "before": 1965278,
-   "after": 2027960
+   "before": 1968950,
+   "after": 2031391
   },
   "people_gaining": 19908
  },
