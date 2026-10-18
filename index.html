@@ -125,12 +125,18 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 .exb.off{background:#fff;border-color:#0f766e;box-shadow:none}
 .bnum.on{background:var(--acc);transform:scale(1.25)}
 /* ===== phones only (desktop unchanged) ===== */
-#grab{display:none}
+#grab,#peek{display:none}
 @media (max-width:640px){
   #panel{top:auto;left:0;right:0;bottom:0;width:100%;max-width:100%;max-height:60vh;border-radius:14px 14px 0 0;border-width:1px 0 0;padding:4px 14px 14px;font-size:13px;box-shadow:0 -4px 18px rgba(22,34,43,.22);transition:max-height .2s}
-  #panel.collapsed{max-height:164px;overflow:hidden}
-  #grab{display:flex;justify-content:center;align-items:center;width:100%;height:22px;margin:0 0 2px;border:0;background:none;padding:0}
+  #panel.collapsed{max-height:208px;overflow:hidden}
+  #panel.collapsed #peek{display:block}
+  #peek{margin:-2px 0 8px;font-size:12.5px;line-height:1.35;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--paper)}
+  #peek b{color:var(--acc)}
+  #grab{display:flex;flex-direction:column;align-items:center;width:100%;margin:0 0 4px;border:0;background:none;padding:2px 0 0;gap:3px}
   #grab span{display:block;width:44px;height:5px;border-radius:3px;background:#c9c3b8}
+  #grab b{font-size:12px;font-weight:600;color:#fff;background:var(--acc);padding:4px 12px;border-radius:12px;box-shadow:0 1px 4px rgba(22,34,43,.25)}
+  #panel.collapsed #grab b{animation:nudge 1.6s ease-in-out 3}
+  @keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
   h1{font-size:17px}
   .sub{font-size:12px;margin:0 0 8px}
   .tabs{margin:0 0 8px}
@@ -138,7 +144,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
   .tabs button b{font-size:12.5px}
   .tabs button small{font-size:10px}
   #stat .big,#bsum .big,#bdet .big{font-size:24px}
-  .leaflet-bottom.leaflet-right{bottom:164px}
+  .leaflet-bottom.leaflet-right{bottom:208px}
   .leaflet-top.leaflet-right{top:4px}
 }
 #closeb{position:absolute;top:10px;right:10px;font-size:18px;width:30px;height:30px;border:0;background:none;color:var(--muted);border-radius:4px}
@@ -147,7 +153,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
 <body>
 <div id="map"></div>
 <div id="panel">
-  <button id="grab" type="button" aria-label="Show / hide the panel"><span></span></button>
+  <button id="grab" type="button" aria-expanded="false"><span></span><b id="grabt"></b></button>
   <div class="top"><h1 id="t1"></h1><div class="tools"><button id="infob" type="button" aria-haspopup="dialog">i</button><button id="lang" type="button"></button></div></div>
   <p class="sub" id="sub"></p>
   <div class="tabs" role="tablist">
@@ -155,6 +161,7 @@ select{width:100%;font:inherit;padding:7px 8px;border:1px solid var(--rule);bord
     <button id="tabC" type="button" role="tab" aria-selected="false">👥 <b id="t_tabC"></b><small id="t_tabCs"></small></button>
     <button id="tabB" type="button" role="tab" aria-selected="false">🌉 <b id="t_tabB"></b><small id="t_tabBs"></small></button>
   </div>
+  <div id="peek"></div>
   <button id="summer" type="button" aria-pressed="false"><span id="t_summer"></span><small id="t_summerS"></small></button>
   <section id="pR">
     <div class="seg" role="group"><button id="segM" type="button" aria-pressed="true"></button><button id="segW" type="button" aria-pressed="false"></button></div>
@@ -237,7 +244,7 @@ const T = {
   segM:'Walk + metro', segW:'Walk only', follow:'Follow the mouse', following:'Following: click the map to freeze',
   hintM:'Move the mouse over the map: the start point follows it. Click to freeze it, then hover to read travel times.',
   hintW:'Move the mouse over the map: the colours show where you can walk from there. Click to freeze it.',
-  hintTouch:'Tap the map to choose a start point: the colours show the travel time from there. Pull the panel up for details.',
+  hintTouch:'Tap the map to choose a start point: the colours show the travel time from there.', more:'More details', less:'Show the map',
   set:'Assumptions', speed:'Metro commercial speed', wait:'Wait for a train', transfer:'Transfer between lines', walk:'Walking speed', kmh:'km/h', min:'min',
   legR:'Travel time from the start point', legW:'Walking time from the start point', legC:'Walking time from the station (darker = farther)',
   near:'Nearest station', walkmin:'min on foot', stn:'stations within 30 min', stn60:'within 60 min', over:'60+ min',
@@ -292,7 +299,7 @@ const T = {
   segM:'À pied + métro', segW:'À pied seulement', follow:'Suivre la souris', following:'Suivi actif : clique sur la carte pour figer',
   hintM:'Déplace la souris sur la carte : le point de départ la suit. Clique pour le figer, puis survole la carte pour lire les temps de trajet.',
   hintW:"Déplace la souris sur la carte : les couleurs montrent jusqu'où tu peux marcher depuis ce point. Clique pour le figer.",
-  hintTouch:"Touche la carte pour choisir un point de départ : les couleurs montrent le temps de trajet depuis ce point. Remonte le panneau pour les détails.",
+  hintTouch:"Touche la carte pour choisir un point de départ : les couleurs montrent le temps de trajet depuis ce point.", more:'Plus de détails', less:'Voir la carte',
   set:'Hypothèses', speed:'Vitesse commerciale du métro', wait:'Attente du train', transfer:'Correspondance entre lignes', walk:'Vitesse de marche', kmh:'km/h', min:'min',
   legR:'Temps de trajet depuis le départ', legW:'Temps de marche depuis le départ', legC:'Temps de marche depuis la station (plus foncé = plus loin)',
   near:'Station la plus proche', walkmin:'min à pied', stn:'stations à moins de 30 min', stn60:'à moins de 60 min', over:'60+ min',
@@ -471,11 +478,21 @@ const map = L.map('map', {zoomControl:false, zoomAnimation:false}).setView([24.7
 const MOB = window.matchMedia('(max-width: 640px)').matches, TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (MOB) {
   const fb = map.fitBounds.bind(map);
-  map.fitBounds = (b, o = {}) => fb(b, Object.assign({}, o, {padding:null, paddingTopLeft:[24, 24], paddingBottomRight:[24, 190]}));
+  map.fitBounds = (b, o = {}) => fb(b, Object.assign({}, o, {padding:null, paddingTopLeft:[24, 24], paddingBottomRight:[24, 230]}));
   const pn = document.getElementById('panel'); pn.classList.add('collapsed');
-  document.getElementById('grab').addEventListener('click', () => { pn.classList.toggle('collapsed'); pn.scrollTop = 0; });
+  const grabTxt = () => { const c = pn.classList.contains('collapsed'); document.getElementById('grabt').textContent = c ? '▲ ' + tr('more') : '▼ ' + tr('less'); document.getElementById('grab').setAttribute('aria-expanded', !c); };
+  document.getElementById('grab').addEventListener('click', () => { pn.classList.toggle('collapsed'); pn.scrollTop = 0; grabTxt(); });
+  // one-line summary shown while the panel is folded
+  const peek = () => {
+    let t = '';
+    if (tab === 'reach') t = [...$('out').children].filter(e => !e.classList.contains('hint')).map(e => e.textContent).join(' · ') || $('out').textContent;
+    else if (tab === 'cov') t = $('stat').textContent || $('info').textContent;
+    else { const d = $('bdet'); t = !d.hidden ? [...d.children].slice(0, 3).map(e => e.textContent).join(' ') : [...$('bsum').children].slice(0, 2).map(e => e.textContent).join(' '); }
+    $('peek').textContent = t.replace(/(\d)(?=[A-Za-zÀ-ÿ])/g, '$1 ').replace(/\s+/g, ' ').trim(); grabTxt();
+  };
+  setInterval(peek, 600);
 }
-const sheetDown = () => { if (MOB) { const pn = document.getElementById('panel'); pn.classList.add('collapsed'); pn.scrollTop = 0; } };
+const sheetDown = () => { if (MOB) { const pn = document.getElementById('panel'); pn.classList.add('collapsed'); pn.scrollTop = 0; const b = document.getElementById('grabt'); if (b) b.textContent = '▲ ' + tr('more'); } };
 L.control.zoom({position:'topright'}).addTo(map);
 [['iso',350],['time',360],['labels',400],['lines',450],['stations',650]].forEach(([n, z]) => { map.createPane(n).style.zIndex = z; });
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/';
@@ -498,7 +515,7 @@ new BaseCtl().addTo(map);
 
 const fmt = n => Math.round(n).toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-US');
 const cmp = n => new Intl.NumberFormat(lang === 'fr' ? 'fr-FR' : 'en-US', {notation:'compact', maximumFractionDigits:1}).format(n);
-const V = '32';   // bump after each data update so browsers reload the files
+const V = '33';   // bump after each data update so browsers reload the files
 const getJSON = u => fetch(u + '?v=' + V).then(r => { if (!r.ok) throw new Error(r.url); return r.json(); });
 const markers = {}, base = {radius:5, color:'#16222b', weight:2, fillColor:'#fff', fillOpacity:1};
 const linesOf = name => { const s = S.find(x => x.n === name); return s ? s.lines : []; };
